@@ -1,0 +1,134 @@
+{
+  "title": "InPost",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Set up InPost",
+        "description": "Sign in the way the InPost app does: enter your phone number and InPost will text you a login code.",
+        "data": {
+          "phone": "Phone number"
+        },
+        "data_description": {
+          "phone": "The mobile number registered with your InPost account, e.g. 600123456."
+        }
+      },
+      "sms": {
+        "title": "Enter the SMS code",
+        "description": "InPost texted a login code to {phone}. Enter it below.",
+        "data": {
+          "sms_code": "SMS code"
+        }
+      },
+      "reauth_confirm": {
+        "title": "InPost sign-in expired",
+        "description": "InPost needs you to sign in again. A fresh login code was texted to {phone} — enter it below.",
+        "data": {
+          "sms_code": "SMS code"
+        }
+      }
+    },
+    "error": {
+      "invalid_phone": "That does not look like a valid phone number.",
+      "invalid_auth": "That code was not accepted. Check it and try again.",
+      "cannot_connect": "Could not reach InPost. Please try again."
+    },
+    "abort": {
+      "already_configured": "That InPost account is already set up.",
+      "reauth_successful": "InPost was reauthenticated successfully."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "InPost options",
+        "sections": {
+          "delivered": {
+            "name": "Delivered parcels",
+            "data": {
+              "delivered_filter_type": "Filter by",
+              "delivered_filter_amount": "Amount"
+            },
+            "data_description": {
+              "delivered_filter_type": "Show delivered parcels from the last X days, or limit to the X most recent.",
+              "delivered_filter_amount": "Number of days or parcels to show."
+            }
+          },
+          "history": {
+            "name": "Parcel history",
+            "data": {
+              "include_history": "Include status history"
+            },
+            "data_description": {
+              "include_history": "Add a per-parcel history attribute listing each status update (timestamp, status, original text). Off by default."
+            }
+          },
+          "polling": {
+            "name": "Polling",
+            "data": {
+              "refresh_interval": "Refresh every"
+            },
+            "data_description": {
+              "refresh_interval": "How often the integration checks InPost for parcel updates. A slower interval is gentler on InPost's API; the default of 30 minutes is plenty for most parcels."
+            }
+          }
+        }
+      }
+    }
+  },
+  "selector": {
+    "refresh_interval": {
+      "options": {
+        "15": "15 minutes",
+        "30": "30 minutes",
+        "60": "60 minutes",
+        "120": "120 minutes",
+        "240": "240 minutes"
+      }
+    },
+    "delivered_filter_type": {
+      "options": {
+        "days": "Days",
+        "parcels": "Number of parcels"
+      }
+    }
+  },
+  "device_automation": {
+    "trigger_type": {
+      "parcel_registered": "A parcel was registered",
+      "parcel_status_changed": "A parcel's status changed",
+      "parcel_delivered": "A parcel was delivered",
+      "parcel_delivery_time_changed": "A parcel's expected delivery time changed"
+    }
+  },
+  "entity": {
+    "button": {
+      "refresh": {
+        "name": "Refresh"
+      }
+    },
+    "calendar": {
+      "deliveries": {
+        "name": "Deliveries"
+      }
+    },
+    "sensor": {
+      "incoming_parcels": {
+        "name": "Incoming parcels",
+        "unit_of_measurement": "parcels"
+      },
+      "next_delivery": {
+        "name": "Next delivery"
+      },
+      "delivered_parcels": {
+        "name": "Delivered parcels",
+        "unit_of_measurement": "parcels"
+      },
+      "last_update": {
+        "name": "Last successful update"
+      },
+      "parcel": {
+        "name": "Parcel {barcode}"
+      }
+    }
+  }
+}

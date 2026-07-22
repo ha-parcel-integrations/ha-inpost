@@ -1,0 +1,134 @@
+{
+  "title": "InPost",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Konfiguracja InPost",
+        "description": "Zaloguj się tak jak w aplikacji InPost: podaj numer telefonu, a InPost wyśle Ci kod logowania SMS-em.",
+        "data": {
+          "phone": "Numer telefonu"
+        },
+        "data_description": {
+          "phone": "Numer telefonu powiązany z Twoim kontem InPost, np. 600123456."
+        }
+      },
+      "sms": {
+        "title": "Wpisz kod SMS",
+        "description": "InPost wysłał kod logowania na numer {phone}. Wpisz go poniżej.",
+        "data": {
+          "sms_code": "Kod SMS"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Sesja InPost wygasła",
+        "description": "InPost wymaga ponownego logowania. Nowy kod został wysłany na numer {phone} — wpisz go poniżej.",
+        "data": {
+          "sms_code": "Kod SMS"
+        }
+      }
+    },
+    "error": {
+      "invalid_phone": "To nie wygląda na prawidłowy numer telefonu.",
+      "invalid_auth": "Kod nie został zaakceptowany. Sprawdź go i spróbuj ponownie.",
+      "cannot_connect": "Nie można połączyć się z InPost. Spróbuj ponownie."
+    },
+    "abort": {
+      "already_configured": "To konto InPost jest już skonfigurowane.",
+      "reauth_successful": "Ponowne uwierzytelnienie InPost powiodło się."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Opcje InPost",
+        "sections": {
+          "delivered": {
+            "name": "Doręczone paczki",
+            "data": {
+              "delivered_filter_type": "Filtruj według",
+              "delivered_filter_amount": "Ilość"
+            },
+            "data_description": {
+              "delivered_filter_type": "Pokaż doręczone paczki z ostatnich X dni lub ogranicz do X najnowszych.",
+              "delivered_filter_amount": "Liczba dni lub paczek do pokazania."
+            }
+          },
+          "history": {
+            "name": "Historia paczki",
+            "data": {
+              "include_history": "Dołącz historię statusów"
+            },
+            "data_description": {
+              "include_history": "Dodaje do każdej paczki atrybut z historią statusów (czas, status, oryginalny tekst). Domyślnie wyłączone."
+            }
+          },
+          "polling": {
+            "name": "Odpytywanie",
+            "data": {
+              "refresh_interval": "Odświeżaj co"
+            },
+            "data_description": {
+              "refresh_interval": "Jak często integracja sprawdza InPost. Wolniejszy interwał jest łagodniejszy dla API InPost; domyślne 30 minut wystarcza dla większości paczek."
+            }
+          }
+        }
+      }
+    }
+  },
+  "selector": {
+    "refresh_interval": {
+      "options": {
+        "15": "15 minut",
+        "30": "30 minut",
+        "60": "60 minut",
+        "120": "120 minut",
+        "240": "240 minut"
+      }
+    },
+    "delivered_filter_type": {
+      "options": {
+        "days": "Dni",
+        "parcels": "Liczba paczek"
+      }
+    }
+  },
+  "device_automation": {
+    "trigger_type": {
+      "parcel_registered": "Paczka została zarejestrowana",
+      "parcel_status_changed": "Status paczki się zmienił",
+      "parcel_delivered": "Paczka została doręczona",
+      "parcel_delivery_time_changed": "Zmienił się przewidywany czas doręczenia"
+    }
+  },
+  "entity": {
+    "button": {
+      "refresh": {
+        "name": "Odśwież"
+      }
+    },
+    "calendar": {
+      "deliveries": {
+        "name": "Doręczenia"
+      }
+    },
+    "sensor": {
+      "incoming_parcels": {
+        "name": "Przychodzące paczki",
+        "unit_of_measurement": "paczki"
+      },
+      "next_delivery": {
+        "name": "Następne doręczenie"
+      },
+      "delivered_parcels": {
+        "name": "Doręczone paczki",
+        "unit_of_measurement": "paczki"
+      },
+      "last_update": {
+        "name": "Ostatnia udana aktualizacja"
+      },
+      "parcel": {
+        "name": "Paczka {barcode}"
+      }
+    }
+  }
+}

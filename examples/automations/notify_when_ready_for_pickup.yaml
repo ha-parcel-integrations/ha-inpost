@@ -1,0 +1,29 @@
+# Notify when an InPost parcel is ready to collect from a Paczkomat.
+#
+# This is InPost's headline moment: the parcel is sitting in a locker waiting
+# for you. The `pickup_point` field carries the Paczkomat name, so the
+# notification can tell you exactly where to go.
+
+alias: "InPost: ready for pickup"
+description: Notify when a parcel arrives in a locker and is ready to collect.
+mode: queued
+max: 10
+
+triggers:
+  - trigger: event
+    event_type: inpost_parcel_status_changed
+
+conditions:
+  - condition: template
+    value_template: "{{ trigger.event.data.new_status == 'at_pickup_point' }}"
+
+actions:
+  - action: notify.mobile_app
+    data:
+      title: "InPost ready to collect"
+      message: >-
+        {{ trigger.event.data.sender or trigger.event.data.barcode }}
+        is ready at
+        {{ trigger.event.data.pickup_point or 'your pickup point' }}.
+      data:
+        clickAction: "{{ trigger.event.data.url }}"
