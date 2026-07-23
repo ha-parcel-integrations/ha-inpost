@@ -42,3 +42,6 @@ ENV/
 
 # Local-only API / reverse-engineering notes (never published)
 docs/api/
+
+# Local-only maintainer working checklist (our notes, not shipped)
+TODO.md
