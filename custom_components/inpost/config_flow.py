@@ -15,7 +15,6 @@ from typing import Any
 
 import aiohttp
 import voluptuous as vol
-
 from homeassistant.config_entries import (
     ConfigEntry,
     ConfigFlow,
@@ -76,7 +75,7 @@ def valid_phone(value: str) -> bool:
 
 
 def _interval_selector() -> selector.SelectSelector:
-    """The refresh-interval dropdown selector (options translated via strings)."""
+    """Return the refresh-interval dropdown selector (options translated via strings)."""
     return selector.SelectSelector(
         selector.SelectSelectorConfig(
             options=[str(minutes) for minutes in REFRESH_INTERVAL_OPTIONS],

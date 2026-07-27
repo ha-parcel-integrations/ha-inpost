@@ -12,7 +12,7 @@ from custom_components.inpost.api import (
     async_send_sms_code,
 )
 
-from .payloads import ACTIVE_CODE, response, ready_sample
+from .payloads import ACTIVE_CODE, ready_sample, response
 
 
 def _session(*responses) -> MagicMock:
@@ -149,7 +149,6 @@ async def test_failed_refresh_demands_reauth():
 async def test_refresh_transport_error_is_transient_not_reauth():
     """A network blip during refresh should retry, never force reauth."""
     session = MagicMock()
-    call = {"n": 0}
 
     def _get(*a, **k):
         resp = AsyncMock()

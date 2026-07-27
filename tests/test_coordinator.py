@@ -16,7 +16,6 @@ from custom_components.inpost.coordinator import InPostCoordinator
 
 from .payloads import (
     ACTIVE_CODE,
-    DELIVERED_CODE,
     delivered_sample,
     in_transit_sample,
     ready_sample,

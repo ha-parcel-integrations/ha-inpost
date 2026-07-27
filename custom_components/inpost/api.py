@@ -57,6 +57,7 @@ class InPostApiError(Exception):
     """Raised when an InPost API call fails for a transient / non-auth reason."""
 
     def __init__(self, detail: str) -> None:
+        """Store the status code that triggered the error."""
         super().__init__(f"InPost API request failed: {detail}")
         self.detail = detail
 

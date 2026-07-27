@@ -20,11 +20,12 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from .api import InPostApiClient, InPostAuthReauthRequired
 from .const import (
     CONF_INCLUDE_HISTORY,
+    CONF_REFRESH_INTERVAL,
     DEFAULT_INCLUDE_HISTORY,
+    DEFAULT_REFRESH_INTERVAL,
     DOMAIN,
     ParcelStatus,
 )
-from .const import CONF_REFRESH_INTERVAL, DEFAULT_REFRESH_INTERVAL
 from .parcels import apply_delivered_filter, normalize_parcel, sort_parcels_by_ts
 
 _LOGGER = logging.getLogger(__name__)

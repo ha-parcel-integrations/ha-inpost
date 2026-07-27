@@ -1,7 +1,6 @@
 """Tests for InPost setup, unload, token persistence and reauth."""
 from unittest.mock import AsyncMock, patch
 
-import pytest
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.helpers import entity_registry as er
 from pytest_homeassistant_custom_component.common import MockConfigEntry

@@ -2,12 +2,10 @@
 from __future__ import annotations
 
 from homeassistant.components.button import ButtonEntity
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import InPostConfigEntry
-from .const import DOMAIN
 from .device import ATTRIBUTION, build_device_info
 
 # A manual refresh is a single API round-trip per tracked parcel; HA's
@@ -33,6 +31,7 @@ class InPostRefreshButton(ButtonEntity):
     _attr_attribution = ATTRIBUTION
 
     def __init__(self, entry: InPostConfigEntry) -> None:
+        """Initialize the button."""
         self._entry = entry
         self._attr_unique_id = f"{entry.entry_id}_refresh"
         self._attr_device_info = build_device_info(entry)

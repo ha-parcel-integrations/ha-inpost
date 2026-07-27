@@ -11,9 +11,8 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
 
 from . import InPostConfigEntry
-from .const import DOMAIN
-from .device import ATTRIBUTION, build_device_info
 from .coordinator import InPostCoordinator
+from .device import ATTRIBUTION, build_device_info
 from .parcels import parse_iso
 
 PARALLEL_UPDATES = 0
@@ -44,6 +43,7 @@ class InPostDeliveriesCalendar(CoordinatorEntity[InPostCoordinator], CalendarEnt
     _attr_attribution = ATTRIBUTION
 
     def __init__(self, coordinator: InPostCoordinator, entry: ConfigEntry) -> None:
+        """Initialize the calendar."""
         super().__init__(coordinator)
         self._attr_unique_id = f"{entry.entry_id}_deliveries"
         self._attr_device_info = build_device_info(entry)
@@ -83,6 +83,7 @@ class InPostDeliveriesCalendar(CoordinatorEntity[InPostCoordinator], CalendarEnt
 
     @property
     def event(self) -> CalendarEvent | None:
+        """Return the next upcoming calendar event."""
         now = dt_util.now()
         upcoming = [event for event in self._events() if event.end > now]
         return min(upcoming, key=lambda event: event.start) if upcoming else None
@@ -93,6 +94,7 @@ class InPostDeliveriesCalendar(CoordinatorEntity[InPostCoordinator], CalendarEnt
         start_date: datetime,
         end_date: datetime,
     ) -> list[CalendarEvent]:
+        """Return calendar events within a datetime range."""
         return [
             event
             for event in self._events()
