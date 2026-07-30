@@ -47,6 +47,49 @@ NEW_ISSUE_URL = (
 # logged only once per HA session instead of on every poll.
 _unmapped_statuses_logged: set[str] = set()
 
+# The parcel field names are modelled from InPost's documented mobile API, but
+# never confirmed against a real account (see TODO.md). The first real payload
+# with top-level fields beyond the ones we read logs them once — keys only,
+# never values (they carry names / a locker open-code) — so we can confirm the
+# shape and wire up anything we missed. See NEW_ISSUE_URL.
+_KNOWN_PAYLOAD_KEYS = {
+    "shipmentNumber",
+    "status",
+    "statusGroup",
+    "sender",
+    "receiver",
+    "pickUpDate",
+    "returnedToSenderDate",
+    "operations",
+    "pickUpPoint",
+    "events",
+    "expiryDate",
+    "openCode",
+    "qrCode",
+    "parcelSize",
+    "shipmentType",
+    "storedDate",
+}
+_payload_shape_logged = False
+
+
+def _note_payload_shape(raw: dict) -> None:
+    """One-shot: report unconfirmed top-level fields so a tester can map them."""
+    global _payload_shape_logged
+    if _payload_shape_logged:
+        return
+    extra = sorted(set(raw) - _KNOWN_PAYLOAD_KEYS)
+    if not extra:
+        return
+    _payload_shape_logged = True
+    _LOGGER.warning(
+        "InPost payload carries fields we have not confirmed against a real "
+        "account yet: %s. Please help us map them — a diagnostics file is "
+        "ideal: %s",
+        extra,
+        NEW_ISSUE_URL,
+    )
+
 
 def _warn_unmapped_status(code: str) -> None:
     """Log an unmapped detailed status once, with a copy-paste issue link."""
@@ -206,6 +249,7 @@ def normalize_parcel(raw: dict, *, include_history: bool = False) -> dict:
     * ``weight`` / ``dimensions`` are ``None`` — InPost exposes only a size
       *class* (``parcelSize``, a letter), which stays under ``raw``.
     """
+    _note_payload_shape(raw)
     tracking_code = raw.get("shipmentNumber")
     status = map_parcel_status(raw.get("status"), raw.get("statusGroup"))
     delivered = status is ParcelStatus.DELIVERED

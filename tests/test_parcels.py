@@ -8,6 +8,7 @@ from datetime import datetime, timedelta, timezone
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
+from custom_components.inpost import parcels as parcels_module
 from custom_components.inpost.const import (
     CONF_DELIVERED_FILTER_AMOUNT,
     CONF_DELIVERED_FILTER_TYPE,
@@ -87,6 +88,30 @@ def test_unmapped_status_warns_only_once(caplog):
     map_parcel_status("abducted", None)
     map_parcel_status("abducted", None)
     assert caplog.text.count("abducted") == 1
+
+
+def test_payload_shape_warns_once_for_unconfirmed_fields(caplog):
+    """A payload with fields beyond the modelled set logs them once, keys only,
+    with an issue link — so a tester can confirm the shape."""
+    parcels_module._payload_shape_logged = False
+    raw = {
+        "shipmentNumber": "6200000000000000000000",
+        "status": "delivered",
+        "customerReference": "secret-order-note",
+    }
+    normalize_parcel(raw)
+    normalize_parcel(raw)
+    assert caplog.text.count("have not confirmed against a real") == 1
+    assert "customerReference" in caplog.text
+    assert "secret-order-note" not in caplog.text  # keys only, never values
+    assert "issues/new" in caplog.text
+
+
+def test_payload_shape_silent_for_known_fields(caplog):
+    """The modelled field set logs nothing."""
+    parcels_module._payload_shape_logged = False
+    normalize_parcel({"shipmentNumber": "6200000000000000000000", "status": "delivered"})
+    assert "have not confirmed against a real" not in caplog.text
 
 
 # ---------------------------------------------------------------------------
