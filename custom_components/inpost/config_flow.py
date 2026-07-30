@@ -119,7 +119,12 @@ class InPostConfigFlow(ConfigFlow, domain=DOMAIN):
                     await async_send_sms_code(
                         async_get_clientsession(self.hass), phone
                     )
-                except (InPostApiError, aiohttp.ClientError):
+                except (InPostApiError, aiohttp.ClientError) as err:
+                    # The endpoint and request shape are confirmed working, so a
+                    # failure here is almost always transport (the HA host can't
+                    # reach InPost) or a transient HTTP error. Log the actual
+                    # cause so it is not hidden behind the generic form message.
+                    _LOGGER.warning("InPost could not send the SMS code: %s", err)
                     errors["base"] = "cannot_connect"
                 else:
                     self._phone = phone
@@ -142,7 +147,8 @@ class InPostConfigFlow(ConfigFlow, domain=DOMAIN):
                     self._phone,
                     user_input["sms_code"].strip(),
                 )
-            except (InPostApiError, aiohttp.ClientError):
+            except (InPostApiError, aiohttp.ClientError) as err:
+                _LOGGER.warning("InPost could not confirm the SMS code: %s", err)
                 errors["base"] = "invalid_auth"
             else:
                 return self.async_create_entry(
@@ -191,7 +197,8 @@ class InPostConfigFlow(ConfigFlow, domain=DOMAIN):
                 await async_send_sms_code(
                     async_get_clientsession(self.hass), self._phone
                 )
-            except (InPostApiError, aiohttp.ClientError):
+            except (InPostApiError, aiohttp.ClientError) as err:
+                _LOGGER.warning("InPost could not send the SMS code: %s", err)
                 errors["base"] = "cannot_connect"
         else:
             try:
@@ -200,7 +207,8 @@ class InPostConfigFlow(ConfigFlow, domain=DOMAIN):
                     self._phone,
                     user_input["sms_code"].strip(),
                 )
-            except (InPostApiError, aiohttp.ClientError):
+            except (InPostApiError, aiohttp.ClientError) as err:
+                _LOGGER.warning("InPost could not confirm the SMS code: %s", err)
                 errors["base"] = "invalid_auth"
             else:
                 return self.async_update_reload_and_abort(
