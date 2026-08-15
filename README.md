@@ -11,9 +11,9 @@
 > You sign in, your parcels appear as sensors and events, and a locker parcel
 > shows as `at_pickup_point`. The auth flow, payload shape and happy path are
 > confirmed against a real account; InPost's detailed status string has ~60
-> documented values and only a handful have been seen on the wire so far. An
-> unrecognised one still lands in a sensible bucket rather than breaking — see
-> [How you can help](#how-you-can-help) if you spot one.
+> documented values and only one (`avizo`) has actually been seen on the wire
+> so far. An unrecognised one still lands in a sensible bucket rather than
+> breaking — see [How you can help](#how-you-can-help) if you spot one.
 
 A custom Home Assistant integration that tracks your [InPost](https://inpost.pl) parcels — the Paczkomat locker network that carries much of Poland's e-commerce (and a growing share of Italy's). You sign in the way the InPost app does: a phone number and a one-time SMS code. Your parcels then appear automatically, no tracking numbers to type.
 
