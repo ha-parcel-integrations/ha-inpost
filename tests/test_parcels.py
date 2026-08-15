@@ -10,9 +10,11 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.inpost import parcels as parcels_module
 from custom_components.inpost.const import (
+    CAPABILITIES,
     CONF_DELIVERED_FILTER_AMOUNT,
     CONF_DELIVERED_FILTER_TYPE,
     DOMAIN,
+    KNOWN_CAPABILITIES,
     ParcelStatus,
 )
 from custom_components.inpost.parcels import (
@@ -176,6 +178,32 @@ CANONICAL_KEYS = [
 
 def test_normalize_publishes_exactly_the_canonical_keys():
     assert list(normalize_parcel(ready_sample())) == CANONICAL_KEYS
+
+
+def test_capabilities_are_known_values():
+    """A typo here would silently misreport InPost on the docs site."""
+    assert CAPABILITIES <= KNOWN_CAPABILITIES
+
+
+def test_capabilities_omit_weight_dimensions_and_delivery_window():
+    """InPost never exposes these — CAPABILITIES must not claim otherwise."""
+    assert "weight" not in CAPABILITIES
+    assert "dimensions" not in CAPABILITIES
+    assert "delivery_window" not in CAPABILITIES
+
+
+def test_capabilities_match_what_normalize_parcel_actually_returns():
+    """Every declared CAPABILITIES entry must come true somewhere in a sample."""
+    delivered = normalize_parcel(delivered_sample())
+    pickup = normalize_parcel(ready_sample())
+    with_history = normalize_parcel(delivered_sample(), include_history=True)
+
+    if "pickup_point" in CAPABILITIES:
+        assert pickup["pickup_point"] is not None
+    if "url" in CAPABILITIES:
+        assert delivered["url"] is not None
+    if "history" in CAPABILITIES:
+        assert with_history["history"] is not None
 
 
 def test_normalize_ready_parcel_is_a_pickup():

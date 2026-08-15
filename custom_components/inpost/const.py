@@ -28,6 +28,19 @@ class ParcelStatus(StrEnum):
 
 PLATFORMS = [Platform.BUTTON, Platform.CALENDAR, Platform.SENSOR]
 
+# Every optional key the parcel contract defines. CAPABILITIES below must be a
+# subset of this — it exists so a typo in CAPABILITIES fails a test instead of
+# silently dropping this carrier off a table on the docs site.
+KNOWN_CAPABILITIES = frozenset(
+    {"weight", "dimensions", "delivery_window", "pickup_point", "url", "history"}
+)
+
+# Which optional contract fields InPost's API actually populates — feeds the
+# comparison table on the docs site. Keep in lockstep with normalize_parcel()
+# in parcels.py: InPost never exposes weight, dimensions (only a size class,
+# under raw) or a delivery ETA window (planned_from/planned_to always None).
+CAPABILITIES = frozenset({"pickup_point", "url", "history"})
+
 # InPost's consumer mobile API — the one the Android app talks to. This is the
 # *account inbox* surface: log in once with a phone number and an SMS code, and
 # the account then lists every inbound parcel automatically. There is a second,
