@@ -6,14 +6,14 @@
 
 > 💬 Questions or feedback? Join the discussion on the [Home Assistant community](https://community.home-assistant.io/t/packages-postnl-dhl-nl-dpd-and-gls-parcel-integration/112433/).
 
-> ### ⚠️ Early release — the mapping is well-evidenced, not yet confirmed
+> ### ℹ️ New carrier — the detailed status list is still growing
 >
-> Everything works: you sign in, your parcels appear as sensors and events, and
-> a locker parcel shows as `at_pickup_point`. The API's field names and status
-> vocabulary come from InPost's documented mobile API and a second, independent
-> tracker — but they have not yet been checked against an account we control. If
-> something reads oddly, please report it rather than assume it is your parcel —
-> see [How you can help](#how-you-can-help).
+> You sign in, your parcels appear as sensors and events, and a locker parcel
+> shows as `at_pickup_point`. The auth flow, payload shape and happy path are
+> confirmed against a real account; InPost's detailed status string has ~60
+> documented values and only a handful have been seen on the wire so far. An
+> unrecognised one still lands in a sensible bucket rather than breaking — see
+> [How you can help](#how-you-can-help) if you spot one.
 
 A custom Home Assistant integration that tracks your [InPost](https://inpost.pl) parcels — the Paczkomat locker network that carries much of Poland's e-commerce (and a growing share of Italy's). You sign in the way the InPost app does: a phone number and a one-time SMS code. Your parcels then appear automatically, no tracking numbers to type.
 
@@ -169,7 +169,7 @@ Unrecognised InPost status — help us map it. Open an issue and paste this line
   status=some_new_status → reported as 'unknown'
 ```
 
-[Opening that issue](https://github.com/ha-parcel-integrations/ha-inpost/issues/new?template=unrecognised_status.yml) with the logged line is all it takes. Equally useful: a status that reads *wrong* rather than unknown — say a parcel marked delivered while it is still in the locker. Those are the mappings with the least evidence behind them, and getting them right is why this is `0.9.0` rather than `1.0.0`.
+[Opening that issue](https://github.com/ha-parcel-integrations/ha-inpost/issues/new?template=unrecognised_status.yml) with the logged line is all it takes. Equally useful: a status that reads *wrong* rather than unknown — say a parcel marked delivered while it is still in the locker.
 
 ## Troubleshooting
 

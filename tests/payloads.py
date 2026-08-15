@@ -1,9 +1,8 @@
 """Sample InPost API payloads shared by the test modules.
 
 Modelled on InPost's documented ``TrackedParcelNetwork`` shape and the app's
-auth responses. The field names are from the mobile-API reference and a working
-community integration; a fully populated response captured from our own account
-is still outstanding — see TODO.md.
+auth responses, cross-checked 2026-08-15 against a real account's response
+(``eventLog`` shape, the ``avizo`` status) — see ``carrier-research/inpost.md``.
 """
 from __future__ import annotations
 
@@ -11,9 +10,14 @@ ACTIVE_CODE = "630400123456789012345678"
 DELIVERED_CODE = "630400987654321098765432"
 
 
-def event(event_code: str, date: str, title: str) -> dict:
-    """One entry of InPost's ``events[]`` timeline."""
-    return {"eventCode": event_code, "date": date, "eventTitle": title}
+def event(name: str, date: str) -> dict:
+    """One entry of InPost's ``eventLog[]`` timeline.
+
+    Shape confirmed against a real account 2026-08-15: ``{type, name, date}``,
+    no separate human-readable title. ``name`` shares the same vocabulary as
+    the parcel's own ``status`` field.
+    """
+    return {"type": "PARCEL_STATUS", "name": name, "date": date}
 
 
 def ready_sample(code: str = ACTIVE_CODE) -> dict:
@@ -36,10 +40,10 @@ def ready_sample(code: str = ACTIVE_CODE) -> dict:
             "addressDetails": {"city": "Kraków", "street": "Floriańska", "postCode": "31-019"},
         },
         "operations": {"collect": True},
-        "events": [
-            event("ADOPTED_AT_SORTING_CENTER", "2026-04-28T09:00:00+02:00", "W sortowni"),
-            event("OUT_FOR_DELIVERY", "2026-04-29T06:00:00+02:00", "W doręczeniu"),
-            event("READY_TO_PICKUP", "2026-04-29T14:12:00+02:00", "Gotowa do odbioru"),
+        "eventLog": [
+            event("ADOPTED_AT_SORTING_CENTER", "2026-04-28T09:00:00+02:00"),
+            event("OUT_FOR_DELIVERY", "2026-04-29T06:00:00+02:00"),
+            event("READY_TO_PICKUP", "2026-04-29T14:12:00+02:00"),
         ],
     }
 
@@ -57,7 +61,7 @@ def in_transit_sample(code: str = ACTIVE_CODE) -> dict:
             "storedDate": None,
             "pickUpPoint": None,
             "operations": {"collect": False},
-            "events": sample["events"][:1],
+            "eventLog": sample["eventLog"][:1],
         }
     )
     return sample
@@ -79,8 +83,8 @@ def delivered_sample(code: str = DELIVERED_CODE) -> dict:
             "operations": {"collect": False},
         }
     )
-    sample["events"] = sample["events"] + [
-        event("DELIVERED", "2026-04-30T18:22:00+02:00", "Odebrana")
+    sample["eventLog"] = sample["eventLog"] + [
+        event("DELIVERED", "2026-04-30T18:22:00+02:00")
     ]
     return sample
 

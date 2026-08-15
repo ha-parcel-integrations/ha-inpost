@@ -49,6 +49,7 @@ from .payloads import (
         ("returned_to_sender", ParcelStatus.RETURNING),
         ("delivery_attempt_failed", ParcelStatus.PROBLEM),
         ("undelivered_wrong_address", ParcelStatus.PROBLEM),
+        ("avizo", ParcelStatus.PROBLEM),
     ],
 )
 def test_detailed_status_maps(status, expected):
@@ -120,22 +121,32 @@ def test_payload_shape_silent_for_known_fields(caplog):
 
 
 def test_build_history_orders_oldest_to_newest():
-    history = build_history(delivered_sample()["events"])
-    assert history[0]["raw_status"] == "W sortowni"
-    assert history[-1]["raw_status"] == "Odebrana"
-    # InPost event codes are a separate vocabulary; we do not map them.
-    assert all(entry["status"] is None for entry in history)
+    history = build_history(delivered_sample()["eventLog"])
+    assert history[0]["raw_status"] == "ADOPTED_AT_SORTING_CENTER"
+    assert history[-1]["raw_status"] == "DELIVERED"
+    # eventLog names share the status vocabulary, so they map cleanly.
+    assert history[0]["status"] == ParcelStatus.IN_TRANSIT
+    assert history[-1]["status"] == ParcelStatus.DELIVERED
 
 
 def test_build_history_handles_missing_and_malformed():
     assert build_history(None) == []
-    assert build_history([{"eventCode": "X"}]) == []  # no date
+    assert build_history([{"name": "X"}]) == []  # no date
     assert build_history(["not-a-dict"]) == []
 
 
-def test_build_history_falls_back_to_event_code_without_title():
-    events = [{"eventCode": "DELIVERED", "date": "2026-04-30T18:22:00+02:00"}]
-    assert build_history(events)[0]["raw_status"] == "DELIVERED"
+def test_build_history_maps_status_from_event_name():
+    events = [{"name": "DELIVERED", "date": "2026-04-30T18:22:00+02:00"}]
+    entry = build_history(events)[0]
+    assert entry["raw_status"] == "DELIVERED"
+    assert entry["status"] == ParcelStatus.DELIVERED
+
+
+def test_build_history_warns_on_unmapped_event_name(caplog):
+    events = [{"name": "SOME_NEW_EVENT_TYPE", "date": "2026-04-30T18:22:00+02:00"}]
+    entry = build_history(events)[0]
+    assert entry["status"] is None
+    assert "SOME_NEW_EVENT_TYPE" in caplog.text
 
 
 # ---------------------------------------------------------------------------
@@ -297,11 +308,11 @@ def test_parse_iso_handles_zone_naive_and_garbage():
 
 def test_history_unparseable_timestamp_sorts_last():
     events = [
-        {"eventCode": "A", "date": "2026-04-28T09:00:00+02:00", "eventTitle": "ok"},
-        {"eventCode": "B", "date": "not-a-date", "eventTitle": "odd"},
+        {"name": "CONFIRMED", "date": "2026-04-28T09:00:00+02:00"},
+        {"name": "SOME_UNKNOWN_EVENT", "date": "not-a-date"},
     ]
     history = build_history(events)
-    assert [e["raw_status"] for e in history] == ["ok", "odd"]
+    assert [e["raw_status"] for e in history] == ["CONFIRMED", "SOME_UNKNOWN_EVENT"]
 
 
 def test_url_is_none_without_a_barcode():

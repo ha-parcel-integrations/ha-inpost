@@ -62,13 +62,30 @@ _KNOWN_PAYLOAD_KEYS = {
     "returnedToSenderDate",
     "operations",
     "pickUpPoint",
-    "events",
+    "eventLog",
     "expiryDate",
     "openCode",
     "qrCode",
     "parcelSize",
     "shipmentType",
     "storedDate",
+    # Confirmed 2026-08-15 against a real account (see NEW_ISSUE_URL history);
+    # none of these feed the canonical shape, they just stay under ``raw``.
+    "cod",
+    "transactionStatus",
+    "avizoTransactionStatus",
+    "endOfWeekCollection",
+    "economyParcel",
+    "internationalParcel",
+    "ownershipStatus",
+    "sharedTo",
+    "refreshUntil",
+    "requestEasyAccessZone",
+    "voicebot",
+    "canShareToObserve",
+    "canShareOpenCode",
+    "canShareParcel",
+    "withDonations",
 }
 _payload_shape_logged = False
 
@@ -163,30 +180,37 @@ def to_iso_timestamp(value: Any) -> str | None:
 
 
 def build_history(
-    events: list | None, *, max_events: int = HISTORY_MAX_EVENTS
+    event_log: list | None, *, max_events: int = HISTORY_MAX_EVENTS
 ) -> list[dict]:
-    """Build the canonical ``history`` list from InPost's ``events[]``.
+    """Build the canonical ``history`` list from InPost's ``eventLog[]``.
 
     Each entry is ``{timestamp, status, raw_status}`` — identical across all
     suite carriers, and top-level (not under ``raw``) so it survives the
-    aggregator's ``strip_raw()``. InPost gives a human ``eventTitle`` and a
-    ``date`` per event; its ``eventCode`` is a *separate* machine vocabulary
-    from the parcel status values, so we do not attempt to map it to a canonical
-    status here — ``status`` stays ``None`` and ``raw_status`` carries the text.
-    Sorted oldest → newest and capped to the most recent ``max_events``.
+    aggregator's ``strip_raw()``. Live-confirmed 2026-08-15: each entry's
+    ``name`` shares the exact same vocabulary as the parcel's own ``status``
+    field (e.g. an ``eventLog`` entry named ``AVIZO`` lines up with a parcel
+    whose ``status`` is ``avizo``), so it is mapped through :data:`STATUS_MAP`
+    like the top-level status rather than kept as free text. An unmapped name
+    still reports — deduped against the same set the main status warning uses,
+    since it is the same vocabulary — but keeps ``status: None``. Sorted
+    oldest → newest and capped to the most recent ``max_events``.
     """
     parseable: list[tuple[datetime, dict]] = []
     unparseable: list[dict] = []
-    for event in events or []:
+    for event in event_log or []:
         if not isinstance(event, dict):
             continue
         timestamp = to_iso_timestamp(event.get("date"))
         if not timestamp:
             continue
+        name = event.get("name")
+        status = STATUS_MAP.get(name.strip().lower()) if name else None
+        if name and status is None:
+            _warn_unmapped_status(name)
         entry = {
             "timestamp": timestamp,
-            "status": None,
-            "raw_status": event.get("eventTitle") or event.get("eventCode"),
+            "status": status,
+            "raw_status": name,
         }
         parsed = parse_iso(timestamp)
         if parsed is None:
@@ -281,7 +305,7 @@ def normalize_parcel(raw: dict, *, include_history: bool = False) -> dict:
         "url": tracking_url(tracking_code),
         "weight": None,
         "dimensions": None,
-        "history": build_history(raw.get("events")) if include_history else None,
+        "history": build_history(raw.get("eventLog")) if include_history else None,
         "raw": raw,
     }
 

@@ -24,6 +24,7 @@ TO_REDACT = {
     "name",
     "phoneNumber",
     "courierPhoneNumber",
+    "email",
     "pickUpPoint",
     "address",
     "addressDetails",

@@ -42,8 +42,15 @@ here.
 
 InPost is the Paczkomat locker network (Poland, growing in Italy). First
 account-based SMS-login carrier and first with a real "waiting in a locker" state.
-Mapping is well-evidenced but **not exercised against an account we control**
-(pre-1.0).
+**Confirmed against a real account 2026-08-15** — auth, the parcel-list
+endpoint and the happy path all round-tripped correctly; the fuller detailed
+status list (~60 documented values, one live-confirmed so far) is still
+growing, degrading safely to the coarse `statusGroup` + a one-shot warning.
+That real payload also caught two shape bugs: history came from `eventLog`
+(`{type, name, date}`), not the assumed `events`/`eventTitle`, and its `name`
+turned out to share the exact same status vocabulary as the top-level
+`status` field, so history entries now carry a mapped `status` too, not just
+free text.
 
 - **Token handling (do not weaken).** Tokens live in `entry.data` (never options,
   never diagnostics). A 401 triggers one refresh + retry; a *failed* refresh →

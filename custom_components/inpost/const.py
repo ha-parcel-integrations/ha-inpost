@@ -163,6 +163,11 @@ STATUS_MAP: dict[str, str] = {
     "pickup_time_expired": ParcelStatus.PROBLEM,
     "stack_parcel_pickup_time_expired": ParcelStatus.PROBLEM,
     "stack_parcel_in_box_machine_pickup_time_expired": ParcelStatus.PROBLEM,
+    # Live-confirmed 2026-08-15 (real account): a bare "avizo" preceded by
+    # ``rejected_by_receiver`` in the parcel's own event log — a delivery
+    # attempt the receiver turned away, not a locker-ready state. Distinct
+    # from ``avizo_rejected`` above.
+    "avizo": ParcelStatus.PROBLEM,
     "avizo_rejected": ParcelStatus.PROBLEM,
     "undelivered": ParcelStatus.PROBLEM,
     "undelivered_cod_cash_receiver": ParcelStatus.PROBLEM,
