@@ -23,7 +23,7 @@ you act in one of these areas:
 | consider "fixing" a lint/pattern the skill flags (poll interval, inline client) | *Deliberate skill divergences* |
 | commit, bump, tag, release, or write release notes; add a feature without a test | *Workflow / Commits / Versioning / Testing* |
 
-**API mechanics live in `carrier-research/api/inpost/` (private research repo)** — the SMS auth
+**API mechanics live in `carrier-research/inpost/api/` (private research repo)** — the SMS auth
 flow, the token-refresh endpoints, the `/v3/parcels/tracked` list, the bare
 `Authorization` header, and the two-tier status vocabulary. Do not duplicate them
 here.
@@ -108,5 +108,5 @@ python -m pytest tests/ --cov=custom_components.inpost
 
 Coverage must stay **above 95%** (silver `test-coverage` rule). Run before
 committing. A code change updates the README + this file in the same commit;
-the API reference now lives in the private `carrier-research/api/inpost/`,
+the API reference now lives in the private `carrier-research/inpost/api/`,
 not in this repo.
