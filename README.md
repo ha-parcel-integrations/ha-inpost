@@ -52,7 +52,7 @@ Part of the [ha-parcel-integrations](https://github.com/ha-parcel-integrations) 
 
 ## Requirements
 
-- Home Assistant 2024.7 or newer
+- Home Assistant 2024.12 or newer
 - An **InPost account** (the InPost Mobile app), reachable by SMS on its phone number
 
 ## Installation
@@ -100,10 +100,15 @@ Entity IDs include the account's phone number, so multiple accounts stay distinc
 |---|---|
 | `sensor.inpost_<phone>_incoming_parcels` | Number of active parcels, full list under the `parcels` attribute |
 | `sensor.inpost_<phone>_parcel_<number>` | One per parcel; state is the canonical status, attributes carry the full normalised parcel |
+| `sensor.inpost_<phone>_next_delivery` | Earliest expected delivery moment across all active parcels |
 | `sensor.inpost_<phone>_delivered_parcels` | Recently collected parcels (see the retention option) |
 | `sensor.inpost_<phone>_last_successful_update` | Diagnostic: when InPost was last polled successfully |
 
 A collected parcel moves from its per-parcel sensor to the delivered sensor automatically.
+
+A **Deliveries** calendar entity and a **Refresh** button entity are also
+created per account; the button forces an immediate poll without waiting for
+the next scheduled interval.
 
 > **Note on the deliveries calendar and "next delivery" sensor:** InPost does
 > not publish a delivery time window, so these stay empty. They are kept for
