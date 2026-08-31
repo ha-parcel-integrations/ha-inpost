@@ -60,13 +60,13 @@
         }
       },
       "parcels": {
-        "title": "Gevolgde pakketten",
+        "title": "Pakketten beheren",
         "data": {
           "tracking_codes": "Trackingnummers"
         }
       },
       "settings": {
-        "title": "InPost-opties",
+        "title": "Instellingen",
         "sections": {
           "delivered": {
             "name": "Bezorgde pakketten",
@@ -82,10 +82,10 @@
           "history": {
             "name": "Pakketgeschiedenis",
             "data": {
-              "include_history": "Statusgeschiedenis opnemen"
+              "include_history": "Statusgeschiedenis toevoegen"
             },
             "data_description": {
-              "include_history": "Voeg een geschiedenisattribuut met elke statusupdate toe aan elk pakket (tijdstip, status, oorspronkelijke tekst). Standaard uit."
+              "include_history": "Voegt per pakket een geschiedenisattribuut toe met elke statusupdate (tijdstip, status, oorspronkelijke tekst). Standaard uit."
             }
           }
         }
@@ -119,7 +119,7 @@
   "entity": {
     "button": {
       "refresh": {
-        "name": "Vernieuwen"
+        "name": "Verversen"
       }
     },
     "calendar": {
@@ -136,7 +136,7 @@
         "name": "Volgende bezorging"
       },
       "awaiting_pickup": {
-        "name": "Wachtend op afhalen",
+        "name": "Klaar voor afhalen",
         "unit_of_measurement": "pakketten"
       },
       "delivered_parcels": {
@@ -144,7 +144,7 @@
         "unit_of_measurement": "pakketten"
       },
       "last_update": {
-        "name": "Laatste geslaagde update"
+        "name": "Laatste succesvolle update"
       },
       "parcel": {
         "name": "Pakket {barcode}"

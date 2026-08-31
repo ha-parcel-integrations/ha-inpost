@@ -60,13 +60,13 @@
         }
       },
       "parcels": {
-        "title": "Tracked parcels",
+        "title": "Manage parcels",
         "data": {
           "tracking_codes": "Tracking numbers"
         }
       },
       "settings": {
-        "title": "InPost options",
+        "title": "Settings",
         "sections": {
           "delivered": {
             "name": "Delivered parcels",
@@ -136,7 +136,7 @@
         "name": "Next delivery"
       },
       "awaiting_pickup": {
-        "name": "Awaiting pickup",
+        "name": "Ready for pickup",
         "unit_of_measurement": "parcels"
       },
       "delivered_parcels": {
