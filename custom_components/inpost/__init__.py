@@ -8,9 +8,10 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
-from .api import InPostApiClient
-from .const import CONF_AUTH_TOKEN, CONF_REFRESH_TOKEN, PLATFORMS
-from .coordinator import InPostCoordinator
+from .api import InPostApiClient, InPostTrackingApiClient
+from .const import CONF_AUTH_TOKEN, CONF_COUNTRY, CONF_REFRESH_TOKEN, PLATFORMS
+from .coordinator import InPostCoordinator, InPostTrackingCoordinator
+from .services import async_setup_services, async_unload_services
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -19,8 +20,8 @@ _LOGGER = logging.getLogger(__name__)
 class InPostData:
     """Runtime data attached to an InPost config entry."""
 
-    client: InPostApiClient
-    coordinator: InPostCoordinator
+    client: InPostApiClient | InPostTrackingApiClient
+    coordinator: InPostCoordinator | InPostTrackingCoordinator
 
 
 type InPostConfigEntry = ConfigEntry[InPostData]
@@ -34,6 +35,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: InPostConfigEntry) -> bo
     close on unload. The SMS login already happened in the config flow; here we
     only have the stored token pair.
     """
+    # The fixed interval option was retired in 1.1.0. Remove any value left
+    # on older entries so it cannot be mistaken for an active preference.
+    if "refresh_interval" in entry.options:
+        options = dict(entry.options)
+        options.pop("refresh_interval")
+        hass.config_entries.async_update_entry(entry, options=options)
+
     session = async_get_clientsession(hass)
 
     @callback
@@ -48,13 +56,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: InPostConfigEntry) -> bo
             },
         )
 
-    client = InPostApiClient(
-        session,
-        entry.data[CONF_AUTH_TOKEN],
-        entry.data[CONF_REFRESH_TOKEN],
-        on_tokens_updated=_persist_tokens,
-    )
-    coordinator = InPostCoordinator(hass, client, entry)
+    if CONF_COUNTRY in entry.data:
+        # Public tracking hubs have no credentials and can never reauthenticate.
+        client = InPostTrackingApiClient(session)
+        coordinator = InPostTrackingCoordinator(hass, client, entry)
+    else:
+        client = InPostApiClient(
+            session,
+            entry.data[CONF_AUTH_TOKEN],
+            entry.data[CONF_REFRESH_TOKEN],
+            on_tokens_updated=_persist_tokens,
+        )
+        coordinator = InPostCoordinator(hass, client, entry)
 
     # Fetch initial data here, before forwarding to platforms. Raising
     # ConfigEntryNotReady from a forwarded platform is too late for HA to catch
@@ -67,12 +80,27 @@ async def async_setup_entry(hass: HomeAssistant, entry: InPostConfigEntry) -> bo
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
+    if CONF_COUNTRY in entry.data:
+        entry.async_on_unload(entry.add_update_listener(_async_tracking_options_updated))
+        async_setup_services(hass)
+
     # No entry.add_update_listener: the options flow calls async_schedule_reload
     # itself. Combining an update listener with a reload-on-update flow is
     # deprecated and becomes an error in HA 2026.12+.
     return True
 
 
+async def _async_tracking_options_updated(
+    hass: HomeAssistant, entry: InPostConfigEntry
+) -> None:
+    """Apply tracking-code changes immediately without an entry reload."""
+    await entry.runtime_data.coordinator.async_request_refresh()
+
+
 async def async_unload_entry(hass: HomeAssistant, entry: InPostConfigEntry) -> bool:
     """Unload an InPost config entry."""
-    return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    if not await hass.config_entries.async_unload_platforms(entry, PLATFORMS):
+        return False
+    if CONF_COUNTRY in entry.data:
+        async_unload_services(hass, entry)
+    return True

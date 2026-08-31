@@ -10,7 +10,7 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.inpost import parcels as parcels_module
 from custom_components.inpost.const import (
-    CAPABILITIES,
+    CAPABILITIES_BY_VARIANT,
     CONF_DELIVERED_FILTER_AMOUNT,
     CONF_DELIVERED_FILTER_TYPE,
     DOMAIN,
@@ -22,8 +22,10 @@ from custom_components.inpost.parcels import (
     build_history,
     map_parcel_status,
     normalize_parcel,
+    normalize_tracking_parcel,
     parse_iso,
     sort_parcels_by_ts,
+    tracking_hub_url,
 )
 
 from .payloads import (
@@ -91,6 +93,52 @@ def test_unmapped_status_warns_only_once(caplog):
     map_parcel_status("abducted", None)
     map_parcel_status("abducted", None)
     assert caplog.text.count("abducted") == 1
+
+
+def test_public_tracking_payload_is_independent_and_unknown(caplog):
+    parcels_module._unmapped_tracking_statuses_logged.clear()
+    parcel = normalize_tracking_parcel(
+        {
+            "trackingNumber": "PUBLIC-1",
+            "status": "cross_border_moving",
+            "statusTitle": "Moving",
+            "statusDescription": "On its way",
+            "origin": {"countryCode": "IT"},
+            "destination": {"countryCode": "PT"},
+            "trackingDetails": [
+                {
+                    "status": "cross_border_moving",
+                    "statusTitle": "Moving",
+                    "datetime": "2026-08-31T12:00:00Z",
+                }
+            ],
+        },
+        include_history=True,
+    )
+    assert parcel["barcode"] == "PUBLIC-1"
+    assert parcel["status"] is ParcelStatus.UNKNOWN
+    assert parcel["sender"] is None
+    assert parcel["pickup_point"] is None
+    assert parcel["history"][0]["timestamp"] == "2026-08-31T12:00:00Z"
+    assert "cross_border_moving" in caplog.text
+
+
+@pytest.mark.parametrize(
+    ("code", "expected"),
+    [
+        ("CRE.1001", ParcelStatus.REGISTERED),
+        ("MMD.1004", ParcelStatus.IN_TRANSIT),
+        ("LMD.1005", ParcelStatus.AT_PICKUP_POINT),
+        ("LMD.9002", ParcelStatus.PROBLEM),
+        ("RTS.1002", ParcelStatus.RETURNING),
+        ("EOL.1003", ParcelStatus.DELIVERED),
+    ],
+)
+def test_public_tracking_statuses_map_from_live_observations(code, expected):
+    parcel = normalize_tracking_parcel(
+        {"trackingNumber": "REDACTED", "status": code, "trackingDetails": []}
+    )
+    assert parcel["status"] is expected
 
 
 def test_payload_shape_warns_once_for_unconfirmed_fields(caplog):
@@ -182,28 +230,79 @@ def test_normalize_publishes_exactly_the_canonical_keys():
 
 def test_capabilities_are_known_values():
     """A typo here would silently misreport InPost on the docs site."""
-    assert CAPABILITIES <= KNOWN_CAPABILITIES
+    for variant, fields in CAPABILITIES_BY_VARIANT.items():
+        assert fields <= KNOWN_CAPABILITIES, variant
 
 
 def test_capabilities_omit_weight_dimensions_and_delivery_window():
-    """InPost never exposes these — CAPABILITIES must not claim otherwise."""
-    assert "weight" not in CAPABILITIES
-    assert "dimensions" not in CAPABILITIES
-    assert "delivery_window" not in CAPABILITIES
+    """InPost never exposes these on either backend — must not claim otherwise."""
+    for variant, fields in CAPABILITIES_BY_VARIANT.items():
+        assert "weight" not in fields, variant
+        assert "dimensions" not in fields, variant
+        assert "delivery_window" not in fields, variant
 
 
-def test_capabilities_match_what_normalize_parcel_actually_returns():
-    """Every declared CAPABILITIES entry must come true somewhere in a sample."""
+def test_account_capabilities_match_what_normalize_parcel_actually_returns():
+    """Every declared Account capability must come true somewhere in a sample."""
+    capabilities = CAPABILITIES_BY_VARIANT["Account"]
     delivered = normalize_parcel(delivered_sample())
     pickup = normalize_parcel(ready_sample())
     with_history = normalize_parcel(delivered_sample(), include_history=True)
 
-    if "pickup_point" in CAPABILITIES:
+    if "pickup_point" in capabilities:
         assert pickup["pickup_point"] is not None
-    if "url" in CAPABILITIES:
+    if "url" in capabilities:
         assert delivered["url"] is not None
-    if "history" in CAPABILITIES:
+    if "history" in capabilities:
         assert with_history["history"] is not None
+
+
+def test_tracking_capabilities_match_what_normalize_tracking_parcel_returns():
+    """Every declared Tracking capability must come true somewhere in a sample."""
+    capabilities = CAPABILITIES_BY_VARIANT["Tracking"]
+    delivered = normalize_tracking_parcel(
+        {"trackingNumber": "IT123", "status": "EOL.1001"}, country="IT"
+    )
+    with_history = normalize_tracking_parcel(
+        {
+            "trackingNumber": "IT123",
+            "status": "EOL.1001",
+            "trackingDetails": [
+                {"status": "EOL.1001", "datetime": "2026-08-31T12:00:00Z"}
+            ],
+        },
+        country="IT",
+        include_history=True,
+    )
+
+    assert "pickup_point" not in capabilities
+    if "url" in capabilities:
+        assert delivered["url"] is not None
+    if "history" in capabilities:
+        assert with_history["history"] is not None
+
+
+@pytest.mark.parametrize(
+    ("country", "expected_host"),
+    [
+        ("PL", "inpost.pl"),
+        ("IT", "inpost.it"),
+        ("PT", "inpost.pt"),
+        ("GB", "inpost.co.uk"),
+    ],
+)
+def test_tracking_hub_url_per_country(country, expected_host):
+    url = tracking_hub_url("CODE123", country)
+    assert url is not None
+    assert expected_host in url
+    assert "CODE123" in url
+
+
+def test_tracking_hub_url_lowercase_country_and_missing_inputs():
+    assert tracking_hub_url("CODE123", "it") == tracking_hub_url("CODE123", "IT")
+    assert tracking_hub_url(None, "IT") is None
+    assert tracking_hub_url("CODE123", None) is None
+    assert tracking_hub_url("CODE123", "ES") is None
 
 
 def test_normalize_ready_parcel_is_a_pickup():

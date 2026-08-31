@@ -15,7 +15,7 @@
 > so far. An unrecognised one still lands in a sensible bucket rather than
 > breaking — see [How you can help](#how-you-can-help) if you spot one.
 
-A custom Home Assistant integration that tracks your [InPost](https://inpost.pl) parcels — the Paczkomat locker network that carries much of Poland's e-commerce (and a growing share of Italy's). You sign in the way the InPost app does: a phone number and a one-time SMS code. Your parcels then appear automatically, no tracking numbers to type.
+A custom Home Assistant integration that tracks your [InPost](https://inpost.pl) parcels. Choose either the Polish app account (phone number plus SMS, parcels imported automatically) or a public tracking-number hub for Poland, Italy, Portugal or the United Kingdom.
 
 What makes InPost worth its own integration is the **locker**: a parcel waiting for you reports `at_pickup_point`, and its Paczkomat's name comes along with it — so "notify me when a parcel is ready to collect" is a one-line automation.
 
@@ -44,8 +44,9 @@ Part of the [ha-parcel-integrations](https://github.com/ha-parcel-integrations) 
 ## Features
 
 - Signs in the way the InPost app does — phone number plus an SMS code — and then reads your whole parcel inbox automatically. Nothing to type per parcel.
+- Public tracking-number hubs for PL, IT, PT and GB; add codes through **Configure** or `inpost.track_parcel`.
 - Per-parcel sensor with the canonical status (`in_transit` / `out_for_delivery` / `at_pickup_point` / `delivered` / …), InPost's own status text, and — for a parcel waiting in a locker — the Paczkomat name.
-- Summary sensors: incoming parcels and recently delivered parcels.
+- Summary sensors: incoming parcels, parcels awaiting pickup and recently delivered parcels.
 - Events + device triggers for no-code automations (parcel registered, status changed, delivered).
 - Opt-in per-parcel status history.
 - Manual refresh button and a diagnostic last-update sensor.
@@ -69,7 +70,12 @@ Copy `custom_components/inpost` into your `config/custom_components/` folder and
 
 ## Configuration
 
-Add the integration via **Settings → Devices & Services → Add Integration → InPost**, then:
+Add the integration via **Settings → Devices & Services → Add Integration → InPost**, then choose one of these paths:
+
+- **Account (Poland, auto-import):** enter the phone number registered with your InPost account and then the SMS code.
+- **Tracking numbers:** select the delivery market (PL, IT, PT or GB), then add tracking numbers through **Configure** or the services below. Create another hub for a different market when needed.
+
+For the account path:
 
 1. Enter the **phone number** registered with your InPost account (e.g. `600123456` — `+48` and spaces are fine).
 2. InPost texts a **login code**. Enter it.
@@ -77,6 +83,15 @@ Add the integration via **Settings → Devices & Services → Add Integration �
 That is it — your parcels appear on the next refresh. If the session ever expires, Home Assistant asks you to repeat the SMS step; nothing else changes.
 
 You can add more than one account (each is a separate phone number).
+
+The public tracking endpoint deliberately does not expose sender/receiver details, locker or pickup-point detail, or an ETA. Its status vocabulary is still being observed, so new public-tracking statuses safely report as `unknown` until confirmed.
+
+## Services
+
+| Service | Fields | Description |
+|---|---|---|
+| `inpost.track_parcel` | `tracking_code`, `country` (default `PL`) | Add a code to that public-tracking hub. |
+| `inpost.untrack_parcel` | `tracking_code`, `country` (default `PL`) | Remove a code from that public-tracking hub. |
 
 ## Options
 
@@ -86,7 +101,11 @@ Open **Configure** on the integration entry:
 |---|---|---|---|
 | Delivered parcels | Filter by / amount | last 7 days | How long delivered parcels stay visible on the delivered sensor. |
 | Parcel history | Include status history | off | Adds a `history` attribute per parcel with each status update. |
-| Polling | Refresh every | 30 min | How often InPost is checked. Slower is gentler on their API. |
+
+Polling adapts automatically to parcel state: active delivery is checked more
+often, quieter states less often, with no regular checks overnight except the
+daily anchors. Public tracking hubs suspend polling when no active parcels
+remain and resume immediately after a tracking code is added.
 
 ## Removal
 
@@ -101,6 +120,7 @@ Entity IDs include the account's phone number, so multiple accounts stay distinc
 | `sensor.inpost_<phone>_incoming_parcels` | Number of active parcels, full list under the `parcels` attribute |
 | `sensor.inpost_<phone>_parcel_<number>` | One per parcel; state is the canonical status, attributes carry the full normalised parcel |
 | `sensor.inpost_<phone>_next_delivery` | Earliest expected delivery moment across all active parcels |
+| `sensor.inpost_<phone>_awaiting_pickup` | Number of parcels currently waiting to be collected (`at_pickup_point`), full list under the `parcels` attribute — on a tracking hub, the Paczkomat name is not part of that attribute, only the status |
 | `sensor.inpost_<phone>_delivered_parcels` | Recently collected parcels (see the retention option) |
 | `sensor.inpost_<phone>_last_successful_update` | Diagnostic: when InPost was last polled successfully |
 
@@ -193,7 +213,7 @@ statuses and events.
 
 ## Disclaimer
 
-This integration talks to the same private mobile API the InPost app uses. It is not affiliated with, endorsed by, or supported by InPost. Endpoints can change or be withdrawn without notice; be gentle with the polling interval.
+This integration talks to the same private mobile API the InPost app uses. It is not affiliated with, endorsed by, or supported by InPost. Endpoints can change or be withdrawn without notice.
 
 ## Contributing
 

@@ -33,24 +33,32 @@ from .api import (
 )
 from .const import (
     CONF_AUTH_TOKEN,
+    CONF_COUNTRY,
     CONF_DELIVERED_FILTER_AMOUNT,
     CONF_DELIVERED_FILTER_TYPE,
     CONF_INCLUDE_HISTORY,
+    CONF_PARCELS,
     CONF_PHONE,
-    CONF_REFRESH_INTERVAL,
     CONF_REFRESH_TOKEN,
+    CONF_TRACKING_CODE,
     DEFAULT_DELIVERED_FILTER_AMOUNT,
     DEFAULT_DELIVERED_FILTER_TYPE,
     DEFAULT_INCLUDE_HISTORY,
-    DEFAULT_REFRESH_INTERVAL,
     DOMAIN,
-    REFRESH_INTERVAL_OPTIONS,
+    TRACKING_COUNTRIES,
 )
 
 _LOGGER = logging.getLogger(__name__)
 
 _PHONE_SCHEMA = vol.Schema({vol.Required(CONF_PHONE): str})
 _CODE_SCHEMA = vol.Schema({vol.Required("sms_code"): str})
+_TRACKING_COUNTRY_SELECTOR = selector.SelectSelector(
+    selector.SelectSelectorConfig(
+        options=[country.lower() for country in TRACKING_COUNTRIES],
+        translation_key=CONF_COUNTRY,
+        mode=selector.SelectSelectorMode.DROPDOWN,
+    )
+)
 
 
 def normalize_phone(value: str) -> str:
@@ -74,17 +82,6 @@ def valid_phone(value: str) -> bool:
     return bool(re.fullmatch(r"\d{9}", value))
 
 
-def _interval_selector() -> selector.SelectSelector:
-    """Return the refresh-interval dropdown selector (options translated via strings)."""
-    return selector.SelectSelector(
-        selector.SelectSelectorConfig(
-            options=[str(minutes) for minutes in REFRESH_INTERVAL_OPTIONS],
-            translation_key=CONF_REFRESH_INTERVAL,
-            mode=selector.SelectSelectorMode.DROPDOWN,
-        )
-    )
-
-
 class InPostConfigFlow(ConfigFlow, domain=DOMAIN):
     """Handle the UI-driven configuration flow for the InPost integration."""
 
@@ -103,6 +100,14 @@ class InPostConfigFlow(ConfigFlow, domain=DOMAIN):
         return InPostOptionsFlowHandler()
 
     async def async_step_user(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Choose the independent account or public-tracking setup path."""
+        return self.async_show_menu(
+            step_id="user", menu_options=["account", "tracking"]
+        )
+
+    async def async_step_account(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Step one: ask for the phone number and text an SMS code to it."""
@@ -131,7 +136,32 @@ class InPostConfigFlow(ConfigFlow, domain=DOMAIN):
                     return await self.async_step_sms()
 
         return self.async_show_form(
-            step_id="user", data_schema=_PHONE_SCHEMA, errors=errors
+            step_id="account", data_schema=_PHONE_SCHEMA, errors=errors
+        )
+
+    async def async_step_tracking(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Create a country-scoped hub for public tracking numbers."""
+        if user_input is not None:
+            country = user_input[CONF_COUNTRY].upper()
+            await self.async_set_unique_id(f"{DOMAIN}_tracking_{country}")
+            self._abort_if_unique_id_configured()
+            return self.async_create_entry(
+                title=f"InPost ({country} tracking)",
+                data={CONF_COUNTRY: country},
+                options={
+                    CONF_PARCELS: [],
+                    CONF_DELIVERED_FILTER_TYPE: DEFAULT_DELIVERED_FILTER_TYPE,
+                    CONF_DELIVERED_FILTER_AMOUNT: DEFAULT_DELIVERED_FILTER_AMOUNT,
+                    CONF_INCLUDE_HISTORY: DEFAULT_INCLUDE_HISTORY,
+                },
+            )
+        return self.async_show_form(
+            step_id="tracking",
+            data_schema=vol.Schema(
+                {vol.Required(CONF_COUNTRY): _TRACKING_COUNTRY_SELECTOR}
+            ),
         )
 
     async def async_step_sms(
@@ -161,7 +191,6 @@ class InPostConfigFlow(ConfigFlow, domain=DOMAIN):
                     options={
                         CONF_DELIVERED_FILTER_TYPE: DEFAULT_DELIVERED_FILTER_TYPE,
                         CONF_DELIVERED_FILTER_AMOUNT: DEFAULT_DELIVERED_FILTER_AMOUNT,
-                        CONF_REFRESH_INTERVAL: DEFAULT_REFRESH_INTERVAL,
                         CONF_INCLUDE_HISTORY: DEFAULT_INCLUDE_HISTORY,
                     },
                 )
@@ -233,16 +262,56 @@ class InPostOptionsFlowHandler(OptionsFlow):
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
+        """Expose parcel management only for the keyless tracking model."""
+        if CONF_COUNTRY in self.config_entry.data:
+            return self.async_show_menu(
+                step_id="init", menu_options=["parcels", "settings"]
+            )
+        return await self.async_step_settings(user_input)
+
+    async def async_step_parcels(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Replace this public-tracking hub's explicit tracking-code list."""
+        if user_input is not None:
+            codes = list(
+                dict.fromkeys(
+                    (value or "").strip()
+                    for value in user_input.get("tracking_codes", [])
+                    if (value or "").strip()
+                )
+            )
+            return self.async_create_entry(
+                title="",
+                data={
+                    **self.config_entry.options,
+                    CONF_PARCELS: [{CONF_TRACKING_CODE: code} for code in codes],
+                },
+            )
+        current_codes = [
+            item.get(CONF_TRACKING_CODE, "")
+            for item in self.config_entry.options.get(CONF_PARCELS, [])
+            if isinstance(item, dict)
+        ]
+        return self.async_show_form(
+            step_id="parcels",
+            data_schema=self.add_suggested_values_to_schema(
+                vol.Schema(
+                    {vol.Optional("tracking_codes"): selector.TextSelector(
+                        selector.TextSelectorConfig(multiple=True)
+                    )}
+                ),
+                {"tracking_codes": current_codes},
+            ),
+        )
+
+    async def async_step_settings(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
         """Show and handle the single sectioned options form."""
         if user_input is not None:
             delivered = user_input["delivered"]
             history = user_input["history"]
-            polling = user_input["polling"]
-            # Reload so a changed interval takes effect immediately. No update
-            # listener is registered — combining the two is deprecated.
-            self.hass.config_entries.async_schedule_reload(
-                self.config_entry.entry_id
-            )
             return self.async_create_entry(
                 title="",
                 data={
@@ -251,7 +320,6 @@ class InPostOptionsFlowHandler(OptionsFlow):
                         delivered[CONF_DELIVERED_FILTER_AMOUNT]
                     ),
                     CONF_INCLUDE_HISTORY: bool(history[CONF_INCLUDE_HISTORY]),
-                    CONF_REFRESH_INTERVAL: int(polling[CONF_REFRESH_INTERVAL]),
                 },
             )
 
@@ -305,25 +373,7 @@ class InPostOptionsFlowHandler(OptionsFlow):
                     ),
                     {"collapsed": True},
                 ),
-                vol.Required("polling"): section(
-                    vol.Schema(
-                        {
-                            vol.Required(
-                                CONF_REFRESH_INTERVAL,
-                                # str(): selector option values are strings, so
-                                # a stored int default trips "expected str".
-                                default=str(
-                                    current.get(
-                                        CONF_REFRESH_INTERVAL,
-                                        DEFAULT_REFRESH_INTERVAL,
-                                    )
-                                ),
-                            ): _interval_selector(),
-                        }
-                    ),
-                    {"collapsed": True},
-                ),
             }
         )
 
-        return self.async_show_form(step_id="init", data_schema=schema)
+        return self.async_show_form(step_id="settings", data_schema=schema)

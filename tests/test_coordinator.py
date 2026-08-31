@@ -3,16 +3,23 @@ from unittest.mock import AsyncMock
 
 import pytest
 from homeassistant.exceptions import ConfigEntryAuthFailed
+from homeassistant.helpers.update_coordinator import UpdateFailed
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.inpost.api import InPostApiError, InPostAuthReauthRequired
 from custom_components.inpost.const import (
+    CONF_COUNTRY,
     CONF_DELIVERED_FILTER_AMOUNT,
     CONF_DELIVERED_FILTER_TYPE,
+    CONF_PARCELS,
+    CONF_TRACKING_CODE,
     DOMAIN,
     ParcelStatus,
 )
-from custom_components.inpost.coordinator import InPostCoordinator
+from custom_components.inpost.coordinator import (
+    InPostCoordinator,
+    InPostTrackingCoordinator,
+)
 
 from .payloads import (
     ACTIVE_CODE,
@@ -79,13 +86,27 @@ async def test_dead_session_triggers_reauth(hass):
         await coordinator._async_update_data()
 
 
-async def test_transient_error_is_not_reauth(hass):
-    """A plain API error must propagate for UpdateFailed backoff, not reauth."""
+async def test_transient_error_becomes_update_failed_not_reauth(hass):
+    """A plain API error must become UpdateFailed for HA's native retry — not
+    reauth, and not a bare InPostApiError (DataUpdateCoordinator only treats
+    UpdateFailed as a normal, retryable failure; anything else is logged as an
+    unhandled crash)."""
     client = AsyncMock()
     client.async_get_parcels.side_effect = InPostApiError("HTTP 503")
     coordinator = _coordinator(hass, client)
-    with pytest.raises(InPostApiError):
+    with pytest.raises(UpdateFailed):
         await coordinator._async_update_data()
+
+
+async def test_rate_limit_uses_retry_after_backoff(hass):
+    client = AsyncMock()
+    client.async_get_parcels.side_effect = InPostApiError(
+        "HTTP 429", status_code=429, retry_after=120
+    )
+    coordinator = _coordinator(hass, client)
+    with pytest.raises(UpdateFailed) as err:
+        await coordinator._async_update_data()
+    assert err.value.retry_after == 120
 
 
 # ---------------------------------------------------------------------------
@@ -192,3 +213,30 @@ async def test_delivery_time_event_never_fires(hass):
     await coordinator._async_update_data()
     await hass.async_block_till_done()
     assert events == []
+
+
+# ---------------------------------------------------------------------------
+# tracking hub (barcode-based, country-scoped)
+# ---------------------------------------------------------------------------
+
+
+async def test_tracking_coordinator_builds_url_for_its_own_country(hass):
+    """The tracking hub passes its entry's country into normalize_tracking_parcel."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title="InPost (IT tracking)",
+        unique_id="IT",
+        data={CONF_COUNTRY: "IT"},
+        options={CONF_PARCELS: [{CONF_TRACKING_CODE: "IT123"}]},
+    )
+    entry.add_to_hass(hass)
+    client = AsyncMock()
+    client.async_get_parcel.return_value = {
+        "trackingNumber": "IT123",
+        "status": "MMD.1001",
+    }
+    coordinator = InPostTrackingCoordinator(hass, client, entry)
+
+    active = await coordinator._async_update_data()
+
+    assert active[0]["url"] == "https://inpost.it/trova-il-tuo-pacco?number=IT123"

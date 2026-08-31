@@ -1,0 +1,154 @@
+{
+  "title": "InPost",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Configurar o InPost",
+        "menu_options": {
+          "account": "Conta (Polónia, importação automática)",
+          "tracking": "Números de rastreio"
+        }
+      },
+      "account": {
+        "title": "Configurar conta InPost",
+        "description": "Inicie sessão como na aplicação InPost: introduza o seu número de telefone e a InPost enviar-lhe-á um código por SMS.",
+        "data": {
+          "phone": "Número de telefone"
+        },
+        "data_description": {
+          "phone": "O número de telemóvel registado na sua conta InPost, por exemplo 600123456."
+        }
+      },
+      "tracking": {
+        "title": "Configurar rastreio InPost",
+        "description": "Crie um hub para números de rastreio adicionados manualmente.",
+        "data": {
+          "country": "País ou mercado de entrega"
+        }
+      },
+      "sms": {
+        "title": "Introduzir código SMS",
+        "description": "A InPost enviou um código de início de sessão para {phone}. Introduza-o abaixo.",
+        "data": {
+          "sms_code": "Código SMS"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Sessão InPost expirada",
+        "description": "A InPost pede que inicie sessão novamente. Foi enviado um novo código para {phone}; introduza-o abaixo.",
+        "data": {
+          "sms_code": "Código SMS"
+        }
+      }
+    },
+    "error": {
+      "invalid_phone": "Não parece ser um número de telefone válido.",
+      "invalid_auth": "O código não foi aceite. Verifique-o e tente novamente.",
+      "cannot_connect": "Não foi possível contactar a InPost. Tente novamente."
+    },
+    "abort": {
+      "already_configured": "Esta conta InPost já está configurada.",
+      "reauth_successful": "A reautenticação da InPost foi bem-sucedida."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "menu_options": {
+          "parcels": "Encomendas",
+          "settings": "Definições"
+        }
+      },
+      "parcels": {
+        "title": "Encomendas rastreadas",
+        "data": {
+          "tracking_codes": "Números de rastreio"
+        }
+      },
+      "settings": {
+        "title": "Opções do InPost",
+        "sections": {
+          "delivered": {
+            "name": "Encomendas entregues",
+            "data": {
+              "delivered_filter_type": "Filtrar por",
+              "delivered_filter_amount": "Quantidade"
+            },
+            "data_description": {
+              "delivered_filter_type": "Mostre encomendas entregues nos últimos X dias ou limite às X mais recentes.",
+              "delivered_filter_amount": "Número de dias ou encomendas a mostrar."
+            }
+          },
+          "history": {
+            "name": "Histórico da encomenda",
+            "data": {
+              "include_history": "Incluir histórico de estados"
+            },
+            "data_description": {
+              "include_history": "Adiciona a cada encomenda um atributo de histórico com cada atualização (data, estado, texto original). Desativado por predefinição."
+            }
+          }
+        }
+      }
+    }
+  },
+  "selector": {
+    "delivered_filter_type": {
+      "options": {
+        "days": "Dias",
+        "parcels": "Número de encomendas"
+      }
+    },
+    "country": {
+      "options": {
+        "pl": "Polónia",
+        "it": "Itália",
+        "pt": "Portugal",
+        "gb": "Reino Unido"
+      }
+    }
+  },
+  "device_automation": {
+    "trigger_type": {
+      "parcel_registered": "Uma encomenda foi registada",
+      "parcel_status_changed": "O estado de uma encomenda mudou",
+      "parcel_delivered": "Uma encomenda foi entregue",
+      "parcel_delivery_time_changed": "A hora de entrega prevista mudou"
+    }
+  },
+  "entity": {
+    "button": {
+      "refresh": {
+        "name": "Atualizar"
+      }
+    },
+    "calendar": {
+      "deliveries": {
+        "name": "Entregas"
+      }
+    },
+    "sensor": {
+      "incoming_parcels": {
+        "name": "Encomendas recebidas",
+        "unit_of_measurement": "encomendas"
+      },
+      "next_delivery": {
+        "name": "Próxima entrega"
+      },
+      "awaiting_pickup": {
+        "name": "Aguardando recolha",
+        "unit_of_measurement": "encomendas"
+      },
+      "delivered_parcels": {
+        "name": "Encomendas entregues",
+        "unit_of_measurement": "encomendas"
+      },
+      "last_update": {
+        "name": "Última atualização bem-sucedida"
+      },
+      "parcel": {
+        "name": "Encomenda {barcode}"
+      }
+    }
+  }
+}

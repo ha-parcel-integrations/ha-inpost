@@ -33,6 +33,10 @@ TO_REDACT = {
     "qrCode",
 }
 
+TRACKING_TO_REDACT = {
+    "barcode", "trackingNumber", "url", "tracking_code",
+}
+
 
 async def async_get_config_entry_diagnostics(
     hass: HomeAssistant, entry: InPostConfigEntry
@@ -40,12 +44,22 @@ async def async_get_config_entry_diagnostics(
     """Return diagnostics for the InPost config entry."""
     coordinator = entry.runtime_data.coordinator
 
+    redact = TRACKING_TO_REDACT if "country" in entry.data else TO_REDACT
     return {
-        "entry_options": async_redact_data(dict(entry.options), TO_REDACT),
+        "entry_options": async_redact_data(dict(entry.options), redact),
         "counts": {
             "incoming_active": len(coordinator.data or []),
             "delivered": len(coordinator.delivered or []),
         },
-        "incoming": async_redact_data(coordinator.data or [], TO_REDACT),
-        "delivered": async_redact_data(coordinator.delivered or [], TO_REDACT),
+        "polling": {
+            "tier_minutes": coordinator.current_tier_minutes,
+            "interval_seconds": (
+                coordinator.update_interval.total_seconds()
+                if coordinator.update_interval is not None
+                else None
+            ),
+            "suspended": coordinator.update_interval is None,
+        },
+        "incoming": async_redact_data(coordinator.data or [], redact),
+        "delivered": async_redact_data(coordinator.delivered or [], redact),
     }

@@ -1,0 +1,21 @@
+track_parcel:
+  fields:
+    tracking_code:
+      required: true
+      selector:
+        text:
+    country:
+      default: PL
+      selector:
+        text:
+
+untrack_parcel:
+  fields:
+    tracking_code:
+      required: true
+      selector:
+        text:
+    country:
+      default: PL
+      selector:
+        text:

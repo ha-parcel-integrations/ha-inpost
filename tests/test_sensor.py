@@ -4,6 +4,7 @@ from unittest.mock import MagicMock
 
 from custom_components.inpost.const import ParcelStatus
 from custom_components.inpost.sensor import (
+    InPostAwaitingPickupSensor,
     InPostDeliveredParcelsSensor,
     InPostIncomingParcelsSensor,
     InPostLastUpdateSensor,
@@ -85,6 +86,25 @@ def test_next_delivery_skips_unparseable_moment():
     ])
     sensor = InPostNextDeliverySensor(coordinator, _entry())
     assert sensor.extra_state_attributes["barcode"] == "B"
+
+
+def test_awaiting_pickup_counts_by_status_only():
+    """A tracking-hub parcel is never flagged 'pickup' (no locker data at all)
+    even when it is genuinely ready — the sensor must still count it."""
+    coordinator = _coordinator([
+        _parcel("A", status=ParcelStatus.AT_PICKUP_POINT, pickup=True),
+        _parcel("B", status=ParcelStatus.AT_PICKUP_POINT, pickup=False),
+        _parcel("C", status=ParcelStatus.IN_TRANSIT, pickup=False),
+    ])
+    sensor = InPostAwaitingPickupSensor(coordinator, _entry())
+    assert sensor.native_value == 2
+    assert {p["barcode"] for p in sensor.extra_state_attributes["parcels"]} == {"A", "B"}
+
+
+def test_awaiting_pickup_empty():
+    sensor = InPostAwaitingPickupSensor(_coordinator([_parcel("A")]), _entry())
+    assert sensor.native_value == 0
+    assert sensor.extra_state_attributes == {"parcels": []}
 
 
 def test_delivered_sensor():

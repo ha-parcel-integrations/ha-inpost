@@ -4,12 +4,26 @@
     "step": {
       "user": {
         "title": "Set up InPost",
+        "menu_options": {
+          "account": "Account (Poland, auto-import)",
+          "tracking": "Tracking numbers"
+        }
+      },
+      "account": {
+        "title": "Set up InPost account",
         "description": "Sign in the way the InPost app does: enter your phone number and InPost will text you a login code.",
         "data": {
           "phone": "Phone number"
         },
         "data_description": {
           "phone": "The mobile number registered with your InPost account, e.g. 600123456."
+        }
+      },
+      "tracking": {
+        "title": "Set up InPost tracking",
+        "description": "Create a hub for manually added tracking numbers.",
+        "data": {
+          "country": "Country or delivery market"
         }
       },
       "sms": {
@@ -40,6 +54,18 @@
   "options": {
     "step": {
       "init": {
+        "menu_options": {
+          "parcels": "Parcels",
+          "settings": "Settings"
+        }
+      },
+      "parcels": {
+        "title": "Tracked parcels",
+        "data": {
+          "tracking_codes": "Tracking numbers"
+        }
+      },
+      "settings": {
         "title": "InPost options",
         "sections": {
           "delivered": {
@@ -61,34 +87,24 @@
             "data_description": {
               "include_history": "Add a per-parcel history attribute listing each status update (timestamp, status, original text). Off by default."
             }
-          },
-          "polling": {
-            "name": "Polling",
-            "data": {
-              "refresh_interval": "Refresh every"
-            },
-            "data_description": {
-              "refresh_interval": "How often the integration checks InPost for parcel updates. A slower interval is gentler on InPost's API; the default of 30 minutes is plenty for most parcels."
-            }
           }
         }
       }
     }
   },
   "selector": {
-    "refresh_interval": {
-      "options": {
-        "15": "15 minutes",
-        "30": "30 minutes",
-        "60": "60 minutes",
-        "120": "120 minutes",
-        "240": "240 minutes"
-      }
-    },
     "delivered_filter_type": {
       "options": {
         "days": "Days",
         "parcels": "Number of parcels"
+      }
+    },
+    "country": {
+      "options": {
+        "pl": "Poland",
+        "it": "Italy",
+        "pt": "Portugal",
+        "gb": "United Kingdom"
       }
     }
   },
@@ -118,6 +134,10 @@
       },
       "next_delivery": {
         "name": "Next delivery"
+      },
+      "awaiting_pickup": {
+        "name": "Awaiting pickup",
+        "unit_of_measurement": "parcels"
       },
       "delivered_parcels": {
         "name": "Delivered parcels",

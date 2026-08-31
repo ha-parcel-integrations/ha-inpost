@@ -1,4 +1,6 @@
 """Tests for the InPost config and options flow — the two-step SMS login."""
+import json
+from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
 import aiohttp
@@ -9,13 +11,14 @@ from custom_components.inpost.api import InPostApiError
 from custom_components.inpost.config_flow import normalize_phone, valid_phone
 from custom_components.inpost.const import (
     CONF_AUTH_TOKEN,
+    CONF_COUNTRY,
     CONF_DELIVERED_FILTER_AMOUNT,
     CONF_DELIVERED_FILTER_TYPE,
     CONF_INCLUDE_HISTORY,
     CONF_PHONE,
-    CONF_REFRESH_INTERVAL,
     CONF_REFRESH_TOKEN,
     DOMAIN,
+    TRACKING_COUNTRIES,
 )
 
 PHONE = "600123456"
@@ -42,14 +45,17 @@ def test_valid_phone_wants_nine_digits():
 
 
 async def _start(hass):
-    return await hass.config_entries.flow.async_init(
+    result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": SOURCE_USER}
+    )
+    return await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"next_step_id": "account"}
     )
 
 
 async def test_full_sms_flow_creates_entry(hass):
     result = await _start(hass)
-    assert result["step_id"] == "user"
+    assert result["step_id"] == "account"
 
     with patch(SEND, new=AsyncMock()) as send:
         result = await hass.config_entries.flow.async_configure(
@@ -70,7 +76,6 @@ async def test_full_sms_flow_creates_entry(hass):
         CONF_AUTH_TOKEN: "acc-1",
         CONF_REFRESH_TOKEN: "ref-1",
     }
-    assert result["options"][CONF_REFRESH_INTERVAL] == 30
 
 
 async def test_invalid_phone_is_rejected(hass):
@@ -78,7 +83,7 @@ async def test_invalid_phone_is_rejected(hass):
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], {CONF_PHONE: "12345"}
     )
-    assert result["step_id"] == "user"
+    assert result["step_id"] == "account"
     assert result["errors"] == {"base": "invalid_phone"}
 
 
@@ -119,6 +124,51 @@ async def test_duplicate_phone_aborts_before_texting(hass):
     send.assert_not_awaited()
 
 
+async def test_user_menu_routes_to_tracking_and_creates_country_hub(hass):
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": SOURCE_USER}
+    )
+    assert result["step_id"] == "user"
+    assert set(result["menu_options"]) == {"account", "tracking"}
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"next_step_id": "tracking"}
+    )
+    assert result["step_id"] == "tracking"
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_COUNTRY: "it"}
+    )
+    assert result["type"] == "create_entry"
+    assert result["title"] == "InPost (IT tracking)"
+    assert result["data"] == {CONF_COUNTRY: "IT"}
+
+
+def test_country_translations_match_supported_tracking_countries():
+    """Never offer a translated country that the public route cannot handle."""
+    translations_dir = Path(__file__).parents[1] / "custom_components/inpost"
+    expected = {country.lower() for country in TRACKING_COUNTRIES}
+    paths = [translations_dir / "strings.json"] + sorted(
+        (translations_dir / "translations").glob("*.json")
+    )
+    assert {path.stem for path in paths[1:]} == {"en", "es", "fr", "it", "nl", "pl", "pt"}
+    for path in paths:
+        payload = json.loads(path.read_text())
+        assert set(payload["selector"]["country"]["options"]) == expected
+
+
+def test_options_menu_labels_are_translated_in_every_locale():
+    """A menu with no menu_options translation renders as blank buttons."""
+    translations_dir = Path(__file__).parents[1] / "custom_components/inpost"
+    paths = [translations_dir / "strings.json"] + sorted(
+        (translations_dir / "translations").glob("*.json")
+    )
+    for path in paths:
+        payload = json.loads(path.read_text())
+        menu_options = payload["options"]["step"]["init"]["menu_options"]
+        assert set(menu_options) == {"parcels", "settings"}, path
+        assert all(label.strip() for label in menu_options.values()), path
+
+
 # ---------------------------------------------------------------------------
 # reauth
 # ---------------------------------------------------------------------------
@@ -134,7 +184,6 @@ def _entry(hass) -> MockConfigEntry:
             CONF_DELIVERED_FILTER_TYPE: "days",
             CONF_DELIVERED_FILTER_AMOUNT: 7,
             CONF_INCLUDE_HISTORY: False,
-            CONF_REFRESH_INTERVAL: 30,
         },
     )
     entry.add_to_hass(hass)
@@ -190,10 +239,30 @@ async def test_options_flow_saves_and_reloads(hass):
                     CONF_DELIVERED_FILTER_AMOUNT: 5,
                 },
                 "history": {CONF_INCLUDE_HISTORY: True},
-                "polling": {CONF_REFRESH_INTERVAL: "60"},
             },
         )
 
     assert result["type"] == "create_entry"
-    assert result["data"][CONF_REFRESH_INTERVAL] == 60
-    reload.assert_called_once_with(entry.entry_id)
+    reload.assert_not_called()
+
+
+async def test_tracking_hub_options_menu_leads_to_settings_step(hass):
+    """The settings form must render under step_id 'settings', matching its
+    own translation — not 'init', which is the menu's step_id."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title="InPost (IT tracking)",
+        unique_id="IT",
+        data={CONF_COUNTRY: "IT"},
+    )
+    entry.add_to_hass(hass)
+
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    assert result["type"] == "menu"
+    assert result["step_id"] == "init"
+    assert set(result["menu_options"]) == {"parcels", "settings"}
+
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {"next_step_id": "settings"}
+    )
+    assert result["step_id"] == "settings"

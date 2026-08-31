@@ -35,11 +35,18 @@ KNOWN_CAPABILITIES = frozenset(
     {"weight", "dimensions", "delivery_window", "pickup_point", "url", "history"}
 )
 
-# Which optional contract fields InPost's API actually populates — feeds the
-# comparison table on the docs site. Keep in lockstep with normalize_parcel()
-# in parcels.py: InPost never exposes weight, dimensions (only a size class,
-# under raw) or a delivery ETA window (planned_from/planned_to always None).
-CAPABILITIES = frozenset({"pickup_point", "url", "history"})
+# Which optional contract fields each of InPost's two backends actually
+# populates — feeds the comparison table on the docs site. Keep in lockstep
+# with parcels.py: the account inbox (normalize_parcel) exposes a pickup
+# point and a deep link; the keyless public-tracking hubs (normalize_tracking_parcel)
+# expose neither weight/dimensions/delivery-window nor a pickup point (no
+# locker data at all), but do get a per-country deep link via
+# TRACKING_URL_BY_COUNTRY. These are two structurally different APIs, not a
+# stronger/weaker split of the same one — see CAPABILITIES_BY_VARIANT below.
+CAPABILITIES_BY_VARIANT = {
+    "Account": frozenset({"pickup_point", "url", "history"}),
+    "Tracking": frozenset({"url", "history"}),
+}
 
 # InPost's consumer mobile API — the one the Android app talks to. This is the
 # *account inbox* surface: log in once with a phone number and an SMS code, and
@@ -74,11 +81,33 @@ PHONE_OS = "Android"
 # The consumer tracking deep link, for the parcel's ``url`` field.
 TRACKING_URL = "https://inpost.pl/sledzenie-przesylek?number={tracking_code}"
 
+# Public, keyless tracking surface.  All currently supported delivery markets
+# share this host and response shape; country remains entry routing data so a
+# future national backend can diverge without migrating existing hubs.
+EASY_TRACKING_URL = "https://inposteasy.com/api/tracking/{tracking_code}"
+TRACKING_COUNTRIES = ("PL", "IT", "PT", "GB")
+DEFAULT_TRACKING_COUNTRY = "PL"
+
+# Consumer tracking deep link per country, for a tracking-hub parcel's ``url``
+# field. Each InPost storefront runs its own tracking page — different host,
+# path and query param per country, live-confirmed 2026-08-31. A country
+# missing here (should not happen for anything in TRACKING_COUNTRIES) leaves
+# ``url`` as ``None`` rather than guessing a template.
+TRACKING_URL_BY_COUNTRY = {
+    "PL": "https://inpost.pl/en/find-parcel?number={tracking_code}",
+    "IT": "https://inpost.it/trova-il-tuo-pacco?number={tracking_code}",
+    "PT": "https://www.inpost.pt/seguimento-do-envio/?exp={tracking_code}&language=pt&pais=PT",
+    "GB": "https://inpost.co.uk/tracking/result?parcel_code={tracking_code}",
+}
+
 # Tokens are stored in the config entry's data (not options) so they survive a
 # restart; the client refreshes them and writes the new pair back.
 CONF_PHONE = "phone"
 CONF_AUTH_TOKEN = "auth_token"
 CONF_REFRESH_TOKEN = "refresh_token"
+CONF_COUNTRY = "country"
+CONF_PARCELS = "parcels"
+CONF_TRACKING_CODE = "tracking_code"
 
 # Delivered-parcels retention: keep delivered parcels visible for the last N
 # days, or keep only the N most recent — identical across the suite.
@@ -87,18 +116,14 @@ CONF_DELIVERED_FILTER_AMOUNT = "delivered_filter_amount"
 DEFAULT_DELIVERED_FILTER_TYPE = "days"
 DEFAULT_DELIVERED_FILTER_AMOUNT = 7
 
-# Refresh interval (minutes) controls how often the coordinator polls the
-# carrier. Default 30 min keeps the load on a consumer endpoint gentle; the
-# minimum is 15 min for the same reason.
-#
-# Deliberate divergence from the HA Core rule that polling intervals are not
-# user-configurable: that rule targets core integrations, and in a HACS parcel
-# tracker a tunable cadence is a wanted feature. Generate with
-# ``--interval fixed`` instead when the carrier throttles or soft-bans unusual
-# traffic.
-CONF_REFRESH_INTERVAL = "refresh_interval"
-REFRESH_INTERVAL_OPTIONS = (15, 30, 60, 120, 240)
-DEFAULT_REFRESH_INTERVAL = 30
+# Dynamic, status-driven polling — unconditional, with no user-facing
+# interval. See carrier-research/dynamic-polling.md for the suite algorithm.
+QUIET_WINDOW_START_HOUR = 0
+QUIET_WINDOW_END_HOUR = 6
+HOT_INTERVAL_MINUTES = 15
+MID_INTERVAL_MINUTES = 45
+HOT_LOOKAHEAD_HOURS = 1
+STAGGER_MINUTES = 7
 
 # Per-parcel status history is opt-in and off by default, identical across the
 # suite. Keep it off by default: it is a large attribute, and on carriers that

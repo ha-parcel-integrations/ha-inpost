@@ -18,7 +18,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import InPostConfigEntry
-from .const import DOMAIN
+from .const import DOMAIN, ParcelStatus
 from .coordinator import InPostCoordinator
 from .device import ATTRIBUTION, build_device_info
 from .parcels import parse_iso
@@ -57,6 +57,7 @@ async def async_setup_entry(
         f"{entry_id}_next_delivery",
         f"{entry_id}_delivered_parcels",
         f"{entry_id}_last_update",
+        f"{entry_id}_awaiting_pickup",
     }
     for entity_entry in er.async_entries_for_config_entry(registry, entry_id):
         if (
@@ -78,6 +79,7 @@ async def async_setup_entry(
             InPostParcelSensor(coordinator, entry, parcel.get("barcode", ""))
         )
     entities.append(InPostNextDeliverySensor(coordinator, entry))
+    entities.append(InPostAwaitingPickupSensor(coordinator, entry))
     entities.append(InPostDeliveredParcelsSensor(coordinator, entry))
     entities.append(InPostLastUpdateSensor(coordinator, entry))
 
@@ -238,6 +240,50 @@ class InPostNextDeliverySensor(
             "sender": earliest.get("sender"),
             "receiver": earliest.get("receiver"),
         }
+
+
+class InPostAwaitingPickupSensor(
+    CoordinatorEntity[InPostCoordinator], SensorEntity
+):
+    """Parcels ready to collect right now — waiting in a Paczkomat or point.
+
+    Filters on the canonical ``status`` alone, not the carrier-specific
+    ``pickup`` flag: that keeps this sensor correct on both entry types,
+    since a tracking-hub parcel is never flagged ``pickup`` (it has no
+    locker data at all) even when its own status is ``at_pickup_point``.
+    Mirrors the awaiting-pickup sensor on the DHL and PostNL integrations.
+    """
+
+    _attr_has_entity_name = True
+    _attr_translation_key = "awaiting_pickup"
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_attribution = ATTRIBUTION
+    _unrecorded_attributes = frozenset({"parcels"})
+
+    def __init__(
+        self, coordinator: InPostCoordinator, entry: ConfigEntry
+    ) -> None:
+        """Initialize the sensor."""
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{entry.entry_id}_awaiting_pickup"
+        self._attr_device_info = build_device_info(entry)
+
+    def _awaiting_parcels(self) -> list[dict]:
+        return [
+            parcel
+            for parcel in self.coordinator.data or []
+            if parcel.get("status") == ParcelStatus.AT_PICKUP_POINT
+        ]
+
+    @property
+    def native_value(self) -> int:
+        """Return the number of parcels awaiting pickup."""
+        return len(self._awaiting_parcels())
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return the extra state attributes."""
+        return {"parcels": self._awaiting_parcels()}
 
 
 class InPostDeliveredParcelsSensor(

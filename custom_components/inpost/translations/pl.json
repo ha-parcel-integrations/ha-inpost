@@ -4,12 +4,26 @@
     "step": {
       "user": {
         "title": "Konfiguracja InPost",
+        "menu_options": {
+          "account": "Konto (Polska, automatyczny import)",
+          "tracking": "Numery przesyłek"
+        }
+      },
+      "account": {
+        "title": "Konfiguracja konta InPost",
         "description": "Zaloguj się tak jak w aplikacji InPost: podaj numer telefonu, a InPost wyśle Ci kod logowania SMS-em.",
         "data": {
           "phone": "Numer telefonu"
         },
         "data_description": {
           "phone": "Numer telefonu powiązany z Twoim kontem InPost, np. 600123456."
+        }
+      },
+      "tracking": {
+        "title": "Konfiguracja śledzenia InPost",
+        "description": "Utwórz hub dla ręcznie dodawanych numerów przesyłek.",
+        "data": {
+          "country": "Kraj lub rynek dostawy"
         }
       },
       "sms": {
@@ -40,6 +54,18 @@
   "options": {
     "step": {
       "init": {
+        "menu_options": {
+          "parcels": "Paczki",
+          "settings": "Ustawienia"
+        }
+      },
+      "parcels": {
+        "title": "Śledzone przesyłki",
+        "data": {
+          "tracking_codes": "Numery przesyłek"
+        }
+      },
+      "settings": {
         "title": "Opcje InPost",
         "sections": {
           "delivered": {
@@ -61,34 +87,24 @@
             "data_description": {
               "include_history": "Dodaje do każdej paczki atrybut z historią statusów (czas, status, oryginalny tekst). Domyślnie wyłączone."
             }
-          },
-          "polling": {
-            "name": "Odpytywanie",
-            "data": {
-              "refresh_interval": "Odświeżaj co"
-            },
-            "data_description": {
-              "refresh_interval": "Jak często integracja sprawdza InPost. Wolniejszy interwał jest łagodniejszy dla API InPost; domyślne 30 minut wystarcza dla większości paczek."
-            }
           }
         }
       }
     }
   },
   "selector": {
-    "refresh_interval": {
-      "options": {
-        "15": "15 minut",
-        "30": "30 minut",
-        "60": "60 minut",
-        "120": "120 minut",
-        "240": "240 minut"
-      }
-    },
     "delivered_filter_type": {
       "options": {
         "days": "Dni",
         "parcels": "Liczba paczek"
+      }
+    },
+    "country": {
+      "options": {
+        "pl": "Polska",
+        "it": "Włochy",
+        "pt": "Portugalia",
+        "gb": "Wielka Brytania"
       }
     }
   },
@@ -118,6 +134,10 @@
       },
       "next_delivery": {
         "name": "Następne doręczenie"
+      },
+      "awaiting_pickup": {
+        "name": "Oczekujące na odbiór",
+        "unit_of_measurement": "paczki"
       },
       "delivered_parcels": {
         "name": "Doręczone paczki",

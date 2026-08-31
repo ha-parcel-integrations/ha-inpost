@@ -8,6 +8,7 @@ from custom_components.inpost.api import (
     InPostApiClient,
     InPostApiError,
     InPostAuthReauthRequired,
+    InPostTrackingApiClient,
     async_confirm_sms_code,
     async_send_sms_code,
 )
@@ -171,3 +172,17 @@ async def test_non_401_error_status_raises_api_error():
     session = _session((503, None))
     with pytest.raises(InPostApiError):
         await InPostApiClient(session, "acc", "ref").async_get_parcels()
+
+
+async def test_public_tracking_client_requests_keyless_endpoint():
+    session = _session((200, {"trackingNumber": "TEST-1", "status": "new"}))
+    parcel = await InPostTrackingApiClient(session).async_get_parcel("TEST-1")
+    assert parcel["trackingNumber"] == "TEST-1"
+    assert session.get.call_args.kwargs["params"] == {"language": "en"}
+
+
+async def test_public_tracking_semantic_500_is_retryable_api_error():
+    session = _session((200, {"status": 500}))
+    with pytest.raises(InPostApiError) as err:
+        await InPostTrackingApiClient(session).async_get_parcel("TEST-1")
+    assert err.value.status_code == 500

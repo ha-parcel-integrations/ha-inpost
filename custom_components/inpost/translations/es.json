@@ -1,0 +1,154 @@
+{
+  "title": "InPost",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Configurar InPost",
+        "menu_options": {
+          "account": "Cuenta (Polonia, importación automática)",
+          "tracking": "Números de seguimiento"
+        }
+      },
+      "account": {
+        "title": "Configurar cuenta de InPost",
+        "description": "Inicia sesión como en la aplicación de InPost: introduce tu teléfono e InPost te enviará un código por SMS.",
+        "data": {
+          "phone": "Número de teléfono"
+        },
+        "data_description": {
+          "phone": "El número de móvil registrado en tu cuenta de InPost, por ejemplo 600123456."
+        }
+      },
+      "tracking": {
+        "title": "Configurar seguimiento de InPost",
+        "description": "Crea un hub para números de seguimiento añadidos manualmente.",
+        "data": {
+          "country": "País o mercado de entrega"
+        }
+      },
+      "sms": {
+        "title": "Introducir código SMS",
+        "description": "InPost ha enviado un código de acceso a {phone}. Introdúcelo a continuación.",
+        "data": {
+          "sms_code": "Código SMS"
+        }
+      },
+      "reauth_confirm": {
+        "title": "El inicio de sesión de InPost ha caducado",
+        "description": "InPost necesita que vuelvas a iniciar sesión. Se ha enviado un código nuevo a {phone}; introdúcelo a continuación.",
+        "data": {
+          "sms_code": "Código SMS"
+        }
+      }
+    },
+    "error": {
+      "invalid_phone": "No parece un número de teléfono válido.",
+      "invalid_auth": "El código no fue aceptado. Compruébalo e inténtalo de nuevo.",
+      "cannot_connect": "No se pudo conectar con InPost. Inténtalo de nuevo."
+    },
+    "abort": {
+      "already_configured": "Esta cuenta de InPost ya está configurada.",
+      "reauth_successful": "InPost se ha reautenticado correctamente."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "menu_options": {
+          "parcels": "Paquetes",
+          "settings": "Ajustes"
+        }
+      },
+      "parcels": {
+        "title": "Paquetes seguidos",
+        "data": {
+          "tracking_codes": "Números de seguimiento"
+        }
+      },
+      "settings": {
+        "title": "Opciones de InPost",
+        "sections": {
+          "delivered": {
+            "name": "Paquetes entregados",
+            "data": {
+              "delivered_filter_type": "Filtrar por",
+              "delivered_filter_amount": "Cantidad"
+            },
+            "data_description": {
+              "delivered_filter_type": "Muestra los paquetes entregados durante los últimos X días o limita a los X más recientes.",
+              "delivered_filter_amount": "Número de días o paquetes que se mostrarán."
+            }
+          },
+          "history": {
+            "name": "Historial del paquete",
+            "data": {
+              "include_history": "Incluir historial de estados"
+            },
+            "data_description": {
+              "include_history": "Añade un atributo de historial a cada paquete con cada actualización de estado (fecha, estado, texto original). Desactivado de forma predeterminada."
+            }
+          }
+        }
+      }
+    }
+  },
+  "selector": {
+    "delivered_filter_type": {
+      "options": {
+        "days": "Días",
+        "parcels": "Número de paquetes"
+      }
+    },
+    "country": {
+      "options": {
+        "pl": "Polonia",
+        "it": "Italia",
+        "pt": "Portugal",
+        "gb": "Reino Unido"
+      }
+    }
+  },
+  "device_automation": {
+    "trigger_type": {
+      "parcel_registered": "Se registró un paquete",
+      "parcel_status_changed": "Cambió el estado de un paquete",
+      "parcel_delivered": "Se entregó un paquete",
+      "parcel_delivery_time_changed": "Cambió la hora de entrega prevista"
+    }
+  },
+  "entity": {
+    "button": {
+      "refresh": {
+        "name": "Actualizar"
+      }
+    },
+    "calendar": {
+      "deliveries": {
+        "name": "Entregas"
+      }
+    },
+    "sensor": {
+      "incoming_parcels": {
+        "name": "Paquetes entrantes",
+        "unit_of_measurement": "paquetes"
+      },
+      "next_delivery": {
+        "name": "Próxima entrega"
+      },
+      "awaiting_pickup": {
+        "name": "Pendientes de recogida",
+        "unit_of_measurement": "paquetes"
+      },
+      "delivered_parcels": {
+        "name": "Paquetes entregados",
+        "unit_of_measurement": "paquetes"
+      },
+      "last_update": {
+        "name": "Última actualización correcta"
+      },
+      "parcel": {
+        "name": "Paquete {barcode}"
+      }
+    }
+  }
+}

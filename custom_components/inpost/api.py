@@ -34,6 +34,7 @@ from .const import (
     API_VERSION,
     AUTHENTICATE_URL,
     CONFIRM_SMS_URL,
+    EASY_TRACKING_URL,
     PARCELS_URL,
     PHONE_OS,
     SEND_SMS_URL,
@@ -56,10 +57,26 @@ _BASE_HEADERS = {
 class InPostApiError(Exception):
     """Raised when an InPost API call fails for a transient / non-auth reason."""
 
-    def __init__(self, detail: str) -> None:
+    def __init__(
+        self,
+        detail: str,
+        *,
+        status_code: int | None = None,
+        retry_after: float | None = None,
+    ) -> None:
         """Store the status code that triggered the error."""
         super().__init__(f"InPost API request failed: {detail}")
         self.detail = detail
+        self.status_code = status_code
+        self.retry_after = retry_after
+
+
+def _retry_after(response: aiohttp.ClientResponse) -> float | None:
+    """Return numeric Retry-After seconds when the server provides it."""
+    try:
+        return float(response.headers.get("Retry-After", ""))
+    except ValueError:
+        return None
 
 
 class InPostAuthReauthRequired(InPostApiError):
@@ -161,27 +178,31 @@ class InPostApiClient:
 
     async def _get(self, url: str) -> dict[str, Any]:
         """GET ``url`` with auth, refreshing once on a 401."""
-        status, payload = await self._authed_get(url)
+        status, payload, retry_after = await self._authed_get(url)
         if status == 401:
             # The access token expired; refresh and try exactly once more.
             await self._refresh()
-            status, payload = await self._authed_get(url)
+            status, payload, retry_after = await self._authed_get(url)
 
         if status != 200:
-            raise InPostApiError(f"GET {url} HTTP {status}")
+            raise InPostApiError(
+                f"GET {url} HTTP {status}",
+                status_code=status,
+                retry_after=retry_after,
+            )
         if not isinstance(payload, dict):
             raise InPostApiError("unexpected body (not a JSON object)")
         return payload
 
-    async def _authed_get(self, url: str) -> tuple[int, Any]:
+    async def _authed_get(self, url: str) -> tuple[int, Any, float | None]:
         """Perform one authenticated GET; return ``(status, parsed_body|None)``."""
         headers = {**_BASE_HEADERS, "Authorization": self._auth_token}
         async with self._session.get(
             url, headers=headers, timeout=_TIMEOUT
         ) as response:
             if response.status == 200:
-                return response.status, await response.json(content_type=None)
-            return response.status, None
+                return response.status, await response.json(content_type=None), None
+            return response.status, None, _retry_after(response)
 
     async def _refresh(self) -> None:
         """Refresh the access token, or raise :class:`InPostAuthReauthRequired`.
@@ -200,6 +221,12 @@ class InPostApiClient:
                     headers=_BASE_HEADERS,
                     timeout=_TIMEOUT,
                 ) as response:
+                    if response.status == 429:
+                        raise InPostApiError(
+                            "token refresh HTTP 429",
+                            status_code=429,
+                            retry_after=_retry_after(response),
+                        )
                     if response.status != 200:
                         raise InPostAuthReauthRequired(
                             f"token refresh HTTP {response.status}"
@@ -221,3 +248,41 @@ class InPostApiClient:
             self._auth_token, self._refresh_token = tokens
             if self._on_tokens_updated is not None:
                 self._on_tokens_updated(self._auth_token, self._refresh_token)
+
+
+class InPostTrackingApiClient:
+    """Keyless client for InPost's public one-parcel tracking surface.
+
+    It deliberately has no token lifecycle and never raises
+    :class:`InPostAuthReauthRequired`: a failure is an ordinary, retryable
+    request failure for the coordinator.
+    """
+
+    def __init__(self, session: aiohttp.ClientSession) -> None:
+        """Initialise with Home Assistant's shared HTTP session."""
+        self._session = session
+
+    async def async_get_parcel(self, tracking_code: str) -> dict[str, Any]:
+        """Fetch one raw public tracking response."""
+        url = EASY_TRACKING_URL.format(tracking_code=tracking_code)
+        async with self._session.get(
+            url,
+            params={"language": "en"},
+            headers={"Accept": "application/json"},
+            timeout=_TIMEOUT,
+        ) as response:
+            if response.status != 200:
+                raise InPostApiError(
+                    f"GET {url} HTTP {response.status}",
+                    status_code=response.status,
+                    retry_after=_retry_after(response),
+                )
+            payload = await response.json(content_type=None)
+        if not isinstance(payload, dict):
+            raise InPostApiError("unexpected tracking body (not a JSON object)")
+        # The public endpoint can return a JSON body with a semantic status
+        # 500 while the HTTP response itself is 200 (observed on PT). It is an
+        # upstream outage, not a parcel state to expose as ``unknown``.
+        if payload.get("status") == 500 and "trackingNumber" not in payload:
+            raise InPostApiError("tracking response status 500", status_code=500)
+        return payload

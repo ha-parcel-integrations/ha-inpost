@@ -1,0 +1,154 @@
+{
+  "title": "InPost",
+  "config": {
+    "step": {
+      "user": {
+        "title": "InPost instellen",
+        "menu_options": {
+          "account": "Account (Polen, automatisch importeren)",
+          "tracking": "Trackingnummers"
+        }
+      },
+      "account": {
+        "title": "InPost-account instellen",
+        "description": "Meld u aan zoals in de InPost-app: voer uw telefoonnummer in en InPost stuurt u een inlogcode per sms.",
+        "data": {
+          "phone": "Telefoonnummer"
+        },
+        "data_description": {
+          "phone": "Het mobiele nummer dat bij uw InPost-account hoort, bijvoorbeeld 600123456."
+        }
+      },
+      "tracking": {
+        "title": "InPost-tracking instellen",
+        "description": "Maak een hub voor handmatig toegevoegde trackingnummers.",
+        "data": {
+          "country": "Land of bezorgmarkt"
+        }
+      },
+      "sms": {
+        "title": "Voer de sms-code in",
+        "description": "InPost heeft een inlogcode naar {phone} gestuurd. Voer deze hieronder in.",
+        "data": {
+          "sms_code": "Sms-code"
+        }
+      },
+      "reauth_confirm": {
+        "title": "InPost-aanmelding verlopen",
+        "description": "InPost vraagt u opnieuw aan te melden. Er is een nieuwe inlogcode naar {phone} gestuurd — voer deze hieronder in.",
+        "data": {
+          "sms_code": "Sms-code"
+        }
+      }
+    },
+    "error": {
+      "invalid_phone": "Dit lijkt geen geldig telefoonnummer.",
+      "invalid_auth": "Deze code is niet geaccepteerd. Controleer de code en probeer het opnieuw.",
+      "cannot_connect": "Kan InPost niet bereiken. Probeer het opnieuw."
+    },
+    "abort": {
+      "already_configured": "Dit InPost-account is al ingesteld.",
+      "reauth_successful": "InPost is opnieuw geverifieerd."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "menu_options": {
+          "parcels": "Pakketten",
+          "settings": "Instellingen"
+        }
+      },
+      "parcels": {
+        "title": "Gevolgde pakketten",
+        "data": {
+          "tracking_codes": "Trackingnummers"
+        }
+      },
+      "settings": {
+        "title": "InPost-opties",
+        "sections": {
+          "delivered": {
+            "name": "Bezorgde pakketten",
+            "data": {
+              "delivered_filter_type": "Filteren op",
+              "delivered_filter_amount": "Aantal"
+            },
+            "data_description": {
+              "delivered_filter_type": "Toon bezorgde pakketten van de laatste X dagen, of beperk tot de X meest recente.",
+              "delivered_filter_amount": "Aantal dagen of pakketten om te tonen."
+            }
+          },
+          "history": {
+            "name": "Pakketgeschiedenis",
+            "data": {
+              "include_history": "Statusgeschiedenis opnemen"
+            },
+            "data_description": {
+              "include_history": "Voeg een geschiedenisattribuut met elke statusupdate toe aan elk pakket (tijdstip, status, oorspronkelijke tekst). Standaard uit."
+            }
+          }
+        }
+      }
+    }
+  },
+  "selector": {
+    "delivered_filter_type": {
+      "options": {
+        "days": "Dagen",
+        "parcels": "Aantal pakketten"
+      }
+    },
+    "country": {
+      "options": {
+        "pl": "Polen",
+        "it": "Italië",
+        "pt": "Portugal",
+        "gb": "Verenigd Koninkrijk"
+      }
+    }
+  },
+  "device_automation": {
+    "trigger_type": {
+      "parcel_registered": "Een pakket is geregistreerd",
+      "parcel_status_changed": "De pakketstatus is gewijzigd",
+      "parcel_delivered": "Een pakket is bezorgd",
+      "parcel_delivery_time_changed": "De verwachte bezorgtijd is gewijzigd"
+    }
+  },
+  "entity": {
+    "button": {
+      "refresh": {
+        "name": "Vernieuwen"
+      }
+    },
+    "calendar": {
+      "deliveries": {
+        "name": "Bezorgingen"
+      }
+    },
+    "sensor": {
+      "incoming_parcels": {
+        "name": "Inkomende pakketten",
+        "unit_of_measurement": "pakketten"
+      },
+      "next_delivery": {
+        "name": "Volgende bezorging"
+      },
+      "awaiting_pickup": {
+        "name": "Wachtend op afhalen",
+        "unit_of_measurement": "pakketten"
+      },
+      "delivered_parcels": {
+        "name": "Bezorgde pakketten",
+        "unit_of_measurement": "pakketten"
+      },
+      "last_update": {
+        "name": "Laatste geslaagde update"
+      },
+      "parcel": {
+        "name": "Pakket {barcode}"
+      }
+    }
+  }
+}
