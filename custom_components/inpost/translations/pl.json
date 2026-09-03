@@ -23,7 +23,7 @@
         "title": "Konfiguracja śledzenia InPost",
         "description": "Utwórz hub dla ręcznie dodawanych numerów przesyłek.",
         "data": {
-          "country": "Kraj lub rynek dostawy"
+          "country": "Kraj"
         }
       },
       "sms": {

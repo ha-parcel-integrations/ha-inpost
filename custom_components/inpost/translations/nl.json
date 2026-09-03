@@ -23,7 +23,7 @@
         "title": "InPost-tracking instellen",
         "description": "Maak een hub voor handmatig toegevoegde trackingnummers.",
         "data": {
-          "country": "Land of bezorgmarkt"
+          "country": "Land"
         }
       },
       "sms": {

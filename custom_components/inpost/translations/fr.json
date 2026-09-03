@@ -23,7 +23,7 @@
         "title": "Configurer le suivi InPost",
         "description": "Créez un hub pour les numéros de suivi ajoutés manuellement.",
         "data": {
-          "country": "Pays ou marché de livraison"
+          "country": "Pays"
         }
       },
       "sms": {

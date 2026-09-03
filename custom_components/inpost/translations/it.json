@@ -23,7 +23,7 @@
         "title": "Configura tracciamento InPost",
         "description": "Crea un hub per i codici di tracciamento aggiunti manualmente.",
         "data": {
-          "country": "Paese o mercato di consegna"
+          "country": "Paese"
         }
       },
       "sms": {

@@ -23,7 +23,7 @@
         "title": "Set up InPost tracking",
         "description": "Create a hub for manually added tracking numbers.",
         "data": {
-          "country": "Country or delivery market"
+          "country": "Country"
         }
       },
       "sms": {

@@ -23,7 +23,7 @@
         "title": "Configurar rastreio InPost",
         "description": "Crie um hub para números de rastreio adicionados manualmente.",
         "data": {
-          "country": "País ou mercado de entrega"
+          "country": "País"
         }
       },
       "sms": {
