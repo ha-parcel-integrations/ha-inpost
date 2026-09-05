@@ -120,6 +120,7 @@ def test_public_tracking_payload_is_independent_and_unknown(caplog):
     assert parcel["sender"] is None
     assert parcel["pickup_point"] is None
     assert parcel["history"][0]["timestamp"] == "2026-08-31T12:00:00Z"
+    assert parcel["history"][0]["status"] is None
     assert "cross_border_moving" in caplog.text
 
 

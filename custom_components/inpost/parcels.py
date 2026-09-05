@@ -434,7 +434,7 @@ def normalize_tracking_parcel(
             timestamp = to_iso_timestamp(detail.get("datetime"))
             event = {
                 "timestamp": timestamp,
-                "status": event_status or ParcelStatus.UNKNOWN,
+                "status": event_status,
                 "raw_status": detail.get("statusTitle") or event_code,
             }
             parsed = parse_iso(timestamp)

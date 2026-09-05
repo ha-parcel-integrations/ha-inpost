@@ -78,6 +78,11 @@ free text.
   (`at_pickup_point`); `claimed` is terminal picked-up.
 - **No ETA** — `planned_from`/`planned_to` always `None` (calendar and
   `next_delivery` inert). No weight/dimensions (only a size class, under `raw`).
+- **An unmapped history status stays `None`, never `ParcelStatus.UNKNOWN`** — in
+  both `build_history()` (account backend) and `normalize_tracking_parcel()`
+  (public-tracking backend), so `None` distinguishes "no status known for this
+  event" from a parcel whose *current* status is genuinely `unknown`. Matches
+  `ha-dhl-nl`'s precedent; keep the two normalizers aligned on this.
 - **QR / openCode redaction (do not weaken)** — the locker-opening codes stay under
   `raw` and are **redacted in diagnostics**; a live `openCode` is a
   physical-security leak. A QR `image` entity is a possible fast-follow, out of
