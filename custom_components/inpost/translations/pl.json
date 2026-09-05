@@ -108,6 +108,36 @@
       }
     }
   },
+  "services": {
+    "track_parcel": {
+      "name": "Śledź paczkę",
+      "description": "Rozpocznij śledzenie paczki InPost na podstawie numeru przesyłki.",
+      "fields": {
+        "tracking_code": {
+          "name": "Numer przesyłki",
+          "description": "Numer przesyłki InPost."
+        },
+        "country": {
+          "name": "Kraj",
+          "description": "Do którego huba krajowego dodać paczkę. Potrzebne tylko, gdy skonfigurowano więcej niż jeden hub."
+        }
+      }
+    },
+    "untrack_parcel": {
+      "name": "Przestań śledzić paczkę",
+      "description": "Zatrzymaj śledzenie paczki InPost na podstawie numeru przesyłki.",
+      "fields": {
+        "tracking_code": {
+          "name": "Numer przesyłki",
+          "description": "Numer przesyłki InPost do zatrzymania śledzenia."
+        },
+        "country": {
+          "name": "Kraj",
+          "description": "Z którego huba krajowego usunąć paczkę. Potrzebne tylko, gdy skonfigurowano więcej niż jeden hub."
+        }
+      }
+    }
+  },
   "device_automation": {
     "trigger_type": {
       "parcel_registered": "Paczka została zarejestrowana",

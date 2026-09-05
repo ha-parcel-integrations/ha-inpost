@@ -108,6 +108,36 @@
       }
     }
   },
+  "services": {
+    "track_parcel": {
+      "name": "Pakket volgen",
+      "description": "Begin een InPost-pakket te volgen aan de hand van de trackingcode.",
+      "fields": {
+        "tracking_code": {
+          "name": "Trackingcode",
+          "description": "Het InPost-trackingnummer."
+        },
+        "country": {
+          "name": "Land",
+          "description": "Voor welk landhub het pakket toegevoegd moet worden. Alleen nodig als er meer dan één hub is ingesteld."
+        }
+      }
+    },
+    "untrack_parcel": {
+      "name": "Pakket niet meer volgen",
+      "description": "Stop met het volgen van een InPost-pakket aan de hand van de trackingcode.",
+      "fields": {
+        "tracking_code": {
+          "name": "Trackingcode",
+          "description": "Het InPost-trackingnummer om niet meer te volgen."
+        },
+        "country": {
+          "name": "Land",
+          "description": "Voor welk landhub het pakket verwijderd moet worden. Alleen nodig als er meer dan één hub is ingesteld."
+        }
+      }
+    }
+  },
   "device_automation": {
     "trigger_type": {
       "parcel_registered": "Een pakket is geregistreerd",

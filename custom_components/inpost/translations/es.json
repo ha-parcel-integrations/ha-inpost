@@ -108,6 +108,36 @@
       }
     }
   },
+  "services": {
+    "track_parcel": {
+      "name": "Seguir paquete",
+      "description": "Empieza a seguir un paquete de InPost mediante su código de seguimiento.",
+      "fields": {
+        "tracking_code": {
+          "name": "Código de seguimiento",
+          "description": "El número de seguimiento de InPost."
+        },
+        "country": {
+          "name": "País",
+          "description": "El hub de país al que añadirlo. Solo es necesario si hay más de un hub configurado."
+        }
+      }
+    },
+    "untrack_parcel": {
+      "name": "Dejar de seguir paquete",
+      "description": "Deja de seguir un paquete de InPost mediante su código de seguimiento.",
+      "fields": {
+        "tracking_code": {
+          "name": "Código de seguimiento",
+          "description": "El número de seguimiento de InPost que se dejará de seguir."
+        },
+        "country": {
+          "name": "País",
+          "description": "El hub de país del que eliminarlo. Solo es necesario si hay más de un hub configurado."
+        }
+      }
+    }
+  },
   "device_automation": {
     "trigger_type": {
       "parcel_registered": "Se registró un paquete",

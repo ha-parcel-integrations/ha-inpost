@@ -108,6 +108,36 @@
       }
     }
   },
+  "services": {
+    "track_parcel": {
+      "name": "Traccia pacco",
+      "description": "Inizia a tracciare un pacco InPost tramite il suo codice di tracciamento.",
+      "fields": {
+        "tracking_code": {
+          "name": "Codice di tracciamento",
+          "description": "Il numero di tracciamento InPost."
+        },
+        "country": {
+          "name": "Paese",
+          "description": "L'hub nazionale a cui aggiungerlo. Necessario solo se è configurato più di un hub."
+        }
+      }
+    },
+    "untrack_parcel": {
+      "name": "Smetti di tracciare pacco",
+      "description": "Interrompi il tracciamento di un pacco InPost tramite il suo codice di tracciamento.",
+      "fields": {
+        "tracking_code": {
+          "name": "Codice di tracciamento",
+          "description": "Il numero di tracciamento InPost da smettere di tracciare."
+        },
+        "country": {
+          "name": "Paese",
+          "description": "L'hub nazionale da cui rimuoverlo. Necessario solo se è configurato più di un hub."
+        }
+      }
+    }
+  },
   "device_automation": {
     "trigger_type": {
       "parcel_registered": "Un pacco è stato registrato",

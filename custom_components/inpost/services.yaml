@@ -2,20 +2,32 @@ track_parcel:
   fields:
     tracking_code:
       required: true
+      example: "639900000000000000000"
       selector:
         text:
     country:
       default: PL
       selector:
-        text:
+        select:
+          options:
+            - "PL"
+            - "IT"
+            - "PT"
+            - "GB"
 
 untrack_parcel:
   fields:
     tracking_code:
       required: true
+      example: "639900000000000000000"
       selector:
         text:
     country:
       default: PL
       selector:
-        text:
+        select:
+          options:
+            - "PL"
+            - "IT"
+            - "PT"
+            - "GB"

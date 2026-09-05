@@ -108,6 +108,36 @@
       }
     }
   },
+  "services": {
+    "track_parcel": {
+      "name": "Rastrear encomenda",
+      "description": "Comece a rastrear uma encomenda InPost pelo código de rastreamento.",
+      "fields": {
+        "tracking_code": {
+          "name": "Código de rastreamento",
+          "description": "O número de rastreamento InPost."
+        },
+        "country": {
+          "name": "País",
+          "description": "O hub de país ao qual adicioná-la. Só é necessário quando há mais de um hub configurado."
+        }
+      }
+    },
+    "untrack_parcel": {
+      "name": "Deixar de rastrear encomenda",
+      "description": "Pare de rastrear uma encomenda InPost pelo código de rastreamento.",
+      "fields": {
+        "tracking_code": {
+          "name": "Código de rastreamento",
+          "description": "O número de rastreamento InPost a deixar de rastrear."
+        },
+        "country": {
+          "name": "País",
+          "description": "O hub de país do qual removê-la. Só é necessário quando há mais de um hub configurado."
+        }
+      }
+    }
+  },
   "device_automation": {
     "trigger_type": {
       "parcel_registered": "Uma encomenda foi registada",

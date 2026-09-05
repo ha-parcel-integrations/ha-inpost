@@ -108,6 +108,36 @@
       }
     }
   },
+  "services": {
+    "track_parcel": {
+      "name": "Suivre un colis",
+      "description": "Commencer à suivre un colis InPost à l'aide de son numéro de suivi.",
+      "fields": {
+        "tracking_code": {
+          "name": "Numéro de suivi",
+          "description": "Le numéro de suivi InPost."
+        },
+        "country": {
+          "name": "Pays",
+          "description": "Le hub national auquel l'ajouter. Nécessaire uniquement si plusieurs hubs sont configurés."
+        }
+      }
+    },
+    "untrack_parcel": {
+      "name": "Arrêter de suivre un colis",
+      "description": "Arrêter de suivre un colis InPost à l'aide de son numéro de suivi.",
+      "fields": {
+        "tracking_code": {
+          "name": "Numéro de suivi",
+          "description": "Le numéro de suivi InPost à ne plus suivre."
+        },
+        "country": {
+          "name": "Pays",
+          "description": "Le hub national duquel le retirer. Nécessaire uniquement si plusieurs hubs sont configurés."
+        }
+      }
+    }
+  },
   "device_automation": {
     "trigger_type": {
       "parcel_registered": "Un colis a été enregistré",

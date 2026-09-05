@@ -108,6 +108,36 @@
       }
     }
   },
+  "services": {
+    "track_parcel": {
+      "name": "Track parcel",
+      "description": "Start tracking an InPost parcel by its tracking code.",
+      "fields": {
+        "tracking_code": {
+          "name": "Tracking code",
+          "description": "The InPost tracking number."
+        },
+        "country": {
+          "name": "Country",
+          "description": "Which country hub to add it to. Only needed when more than one hub is set up."
+        }
+      }
+    },
+    "untrack_parcel": {
+      "name": "Untrack parcel",
+      "description": "Stop tracking an InPost parcel by its tracking code.",
+      "fields": {
+        "tracking_code": {
+          "name": "Tracking code",
+          "description": "The InPost tracking number to stop tracking."
+        },
+        "country": {
+          "name": "Country",
+          "description": "Which country hub to remove it from. Only needed when more than one hub is set up."
+        }
+      }
+    }
+  },
   "device_automation": {
     "trigger_type": {
       "parcel_registered": "A parcel was registered",
