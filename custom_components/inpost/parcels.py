@@ -49,8 +49,8 @@ NEW_ISSUE_URL = (
 _unmapped_statuses_logged: set[str] = set()
 
 # The parcel field names are modelled from InPost's documented mobile API and
-# confirmed against one real account (2026-08-15, see carrier-research/inpost.md),
-# but the set below is still what we've actually seen, not the full API surface.
+# confirmed against one real account (2026-08-15), but the set below is still
+# what we've actually seen, not the full API surface.
 # Any payload with top-level fields beyond this logs them once — keys only,
 # never values (they carry names / a locker open-code) — so we can wire up
 # anything we missed. See NEW_ISSUE_URL.

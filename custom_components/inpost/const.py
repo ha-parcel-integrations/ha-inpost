@@ -117,7 +117,7 @@ DEFAULT_DELIVERED_FILTER_TYPE = "days"
 DEFAULT_DELIVERED_FILTER_AMOUNT = 7
 
 # Dynamic, status-driven polling — unconditional, with no user-facing
-# interval. See carrier-research/dynamic-polling.md for the suite algorithm.
+# interval.
 QUIET_WINDOW_START_HOUR = 0
 QUIET_WINDOW_END_HOUR = 6
 HOT_INTERVAL_MINUTES = 15
