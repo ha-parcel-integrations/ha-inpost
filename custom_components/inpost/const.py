@@ -154,7 +154,18 @@ STATUS_MAP: dict[str, str] = {
     "confirmed": ParcelStatus.REGISTERED,
     "dispatched_by_sender": ParcelStatus.REGISTERED,
     "dispatched_by_sender_to_pok": ParcelStatus.REGISTERED,
-    # Moving through the network.
+    # Moving through the network. Live-confirmed 2026-09-09 (real account,
+    # multi-parcel event logs): ``taken_by_courier`` fires right after
+    # ``confirmed``/``dispatched_by_sender`` and well before
+    # ``adopted_at_source_branch`` — the courier has physically collected the
+    # parcel from the sender, it is not yet anywhere near the recipient. It
+    # was previously bucketed with the terminal "delivered" states, which made
+    # a mid-journey parcel's history jump to ``delivered`` and back to
+    # ``in_transit``. ``collected_from_sender`` shares the same "sender-side
+    # collection" semantics by name and is corrected alongside it.
+    "taken_by_courier": ParcelStatus.IN_TRANSIT,
+    "taken_by_courier_from_pok": ParcelStatus.IN_TRANSIT,
+    "collected_from_sender": ParcelStatus.IN_TRANSIT,
     "adopted_at_source_branch": ParcelStatus.IN_TRANSIT,
     "sent_from_source_branch": ParcelStatus.IN_TRANSIT,
     "adopted_at_sorting_center": ParcelStatus.IN_TRANSIT,
@@ -177,14 +188,11 @@ STATUS_MAP: dict[str, str] = {
     "stack_in_customer_service_point": ParcelStatus.AT_PICKUP_POINT,
     "pickup_reminder_sent": ParcelStatus.AT_PICKUP_POINT,
     "pickup_reminder_sent_address": ParcelStatus.AT_PICKUP_POINT,
-    # Collected / delivered — terminal "arrived" states. ``claimed`` is the
-    # post-pickup state of a locker parcel, so it sorts with delivered, never
-    # mid-transit.
+    # Collected / delivered — terminal "arrived" states, recipient-side only.
+    # ``claimed`` is the post-pickup state of a locker parcel, so it sorts
+    # with delivered, never mid-transit.
     "delivered": ParcelStatus.DELIVERED,
     "collected_by_customer": ParcelStatus.DELIVERED,
-    "collected_from_sender": ParcelStatus.DELIVERED,
-    "taken_by_courier": ParcelStatus.DELIVERED,
-    "taken_by_courier_from_pok": ParcelStatus.DELIVERED,
     "claimed": ParcelStatus.DELIVERED,
     # Going back to the sender.
     "returned_to_sender": ParcelStatus.RETURNING,
@@ -218,12 +226,15 @@ STATUS_MAP: dict[str, str] = {
 }
 
 # Coarse ``statusGroup`` -> ParcelStatus. Matched case-insensitively (the wire
-# values are UPPERCASE). ``OTHER`` is intentionally absent so it falls through
-# to ``unknown`` + a one-shot warning rather than being force-bucketed.
+# values are UPPERCASE). Live-confirmed 2026-09-09 (real account): the actual
+# vocabulary is ``TO_SEND`` / ``TO_PICKUP`` / ``DELIVERED``, not the
+# ``CREATED``/``IN_DELIVERY``/``READY``/``CLAIMED``/``OTHER`` set from the
+# public docs this was originally built from — that guess never matched a real
+# payload, so an unmapped detailed status fell all the way through to
+# ``unknown`` instead of landing in a sensible bucket. Corrected to the
+# confirmed values; re-check against a live payload before adding more.
 STATUS_GROUP_MAP: dict[str, str] = {
-    "created": ParcelStatus.REGISTERED,
-    "in_delivery": ParcelStatus.IN_TRANSIT,
-    "ready": ParcelStatus.AT_PICKUP_POINT,
+    "to_send": ParcelStatus.REGISTERED,
+    "to_pickup": ParcelStatus.AT_PICKUP_POINT,
     "delivered": ParcelStatus.DELIVERED,
-    "claimed": ParcelStatus.DELIVERED,
 }

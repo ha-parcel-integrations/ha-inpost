@@ -48,6 +48,10 @@ from .payloads import (
         ("out_for_delivery", ParcelStatus.OUT_FOR_DELIVERY),
         ("ready_to_pickup", ParcelStatus.AT_PICKUP_POINT),
         ("stack_in_box_machine", ParcelStatus.AT_PICKUP_POINT),
+        # Live-confirmed 2026-09-09: fires right after the sender dispatches,
+        # well before the parcel reaches the recipient — not delivered.
+        ("taken_by_courier", ParcelStatus.IN_TRANSIT),
+        ("collected_from_sender", ParcelStatus.IN_TRANSIT),
         ("collected_by_customer", ParcelStatus.DELIVERED),
         ("claimed", ParcelStatus.DELIVERED),
         ("returned_to_sender", ParcelStatus.RETURNING),
@@ -68,13 +72,13 @@ def test_status_is_case_insensitive():
 def test_group_is_the_fallback_when_detailed_status_unmapped(caplog):
     """An unmapped detailed status still lands in a sensible bucket via its
     group — but is still reported so the detailed map can be completed."""
-    result = map_parcel_status("some_brand_new_status", "IN_DELIVERY")
-    assert result == ParcelStatus.IN_TRANSIT
+    result = map_parcel_status("some_brand_new_status", "TO_PICKUP")
+    assert result == ParcelStatus.AT_PICKUP_POINT
     assert "some_brand_new_status" in caplog.text
 
 
-def test_group_claimed_counts_as_delivered():
-    assert map_parcel_status("weird", "CLAIMED") == ParcelStatus.DELIVERED
+def test_group_to_send_counts_as_registered():
+    assert map_parcel_status("weird", "TO_SEND") == ParcelStatus.REGISTERED
 
 
 def test_unmapped_status_and_group_is_unknown(caplog):
@@ -326,7 +330,7 @@ def test_normalize_collect_flag_alone_marks_pickup():
     InPost sets ``operations.collect``."""
     raw = ready_sample()
     raw["status"] = "some_unmapped_ready_variant"
-    raw["statusGroup"] = "READY"
+    raw["statusGroup"] = "TO_SEND"
     parcel = normalize_parcel(raw)
     assert parcel["pickup"] is True
 

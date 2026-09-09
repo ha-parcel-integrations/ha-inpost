@@ -71,6 +71,11 @@ _KNOWN_PAYLOAD_KEYS = {
     "parcelSize",
     "shipmentType",
     "storedDate",
+    # Confirmed 2026-09-09: locker parcels split across multiple compartments
+    # ({uuid, shipmentNumbers[], presentation, collected}). Doesn't feed the
+    # canonical shape — a multi-compartment parcel is still one shipment with
+    # one status — so it just stays under ``raw``.
+    "multiCompartment",
     # Confirmed 2026-08-15 against a real account (see NEW_ISSUE_URL history);
     # none of these feed the canonical shape, they just stay under ``raw``.
     "cod",
