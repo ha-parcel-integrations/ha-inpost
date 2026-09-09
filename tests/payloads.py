@@ -54,9 +54,6 @@ def in_transit_sample(code: str = ACTIVE_CODE) -> dict:
     sample.update(
         {
             "status": "adopted_at_sorting_center",
-            # Not one of the three confirmed statusGroup values (to_send/
-            # to_pickup/delivered); the detailed status above is what actually
-            # drives the mapping here, this is just filler.
             "statusGroup": "IN_DELIVERY",
             "openCode": None,
             "qrCode": None,

@@ -226,15 +226,15 @@ STATUS_MAP: dict[str, str] = {
 }
 
 # Coarse ``statusGroup`` -> ParcelStatus. Matched case-insensitively (the wire
-# values are UPPERCASE). Live-confirmed 2026-09-09 (real account): the actual
-# vocabulary is ``TO_SEND`` / ``TO_PICKUP`` / ``DELIVERED``, not the
-# ``CREATED``/``IN_DELIVERY``/``READY``/``CLAIMED``/``OTHER`` set from the
-# public docs this was originally built from — that guess never matched a real
-# payload, so an unmapped detailed status fell all the way through to
-# ``unknown`` instead of landing in a sensible bucket. Corrected to the
-# confirmed values; re-check against a live payload before adding more.
+# values are UPPERCASE). Confirmed values only: ``in_delivery`` from a real
+# account payload (2026-08-15), ``to_send``/``to_pickup``/``delivered`` from
+# another (2026-09-09). The original guess also carried ``created``/``ready``/
+# ``claimed``/``other`` from public docs — none of those four have ever been
+# seen on the wire, so they were dropped rather than left as dead weight;
+# re-add one only once a real payload shows it.
 STATUS_GROUP_MAP: dict[str, str] = {
     "to_send": ParcelStatus.REGISTERED,
+    "in_delivery": ParcelStatus.IN_TRANSIT,
     "to_pickup": ParcelStatus.AT_PICKUP_POINT,
     "delivered": ParcelStatus.DELIVERED,
 }
