@@ -228,6 +228,14 @@ class InPostApiClient:
                             retry_after=_retry_after(response),
                         )
                     if response.status != 200:
+                        # The coordinator collapses this into a generic
+                        # "session expired" — keep the real reason visible.
+                        body = await response.text()
+                        _LOGGER.warning(
+                            "Token refresh rejected: HTTP %s, body: %.300s",
+                            response.status,
+                            body,
+                        )
                         raise InPostAuthReauthRequired(
                             f"token refresh HTTP {response.status}"
                         )
@@ -243,7 +251,17 @@ class InPostApiClient:
 
             tokens = _extract_tokens(payload)
             if tokens is None:
-                raise InPostAuthReauthRequired("token refresh carried no tokens")
+                # InPost may rotate only the access token: the authenticate
+                # response can carry authToken alone (observed live:
+                # ['authToken', 'pushIdStatus', 'reauthenticationRequired']).
+                # The stored refresh token is still valid — keep it.
+                auth = payload.get("authToken") if isinstance(payload, dict) else None
+                if not (isinstance(auth, str) and auth):
+                    raise InPostAuthReauthRequired("token refresh carried no tokens")
+                _LOGGER.debug(
+                    "Token refresh returned authToken only; keeping stored refreshToken"
+                )
+                tokens = (auth, self._refresh_token)
 
             self._auth_token, self._refresh_token = tokens
             if self._on_tokens_updated is not None:
