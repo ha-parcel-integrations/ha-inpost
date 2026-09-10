@@ -38,6 +38,12 @@ flow, the token-refresh endpoints, the `/v3/parcels/tracked` list, the bare
 `Authorization` header, and the two-tier status vocabulary. Do not duplicate them
 here.
 
+**Structure, options flow, dynamic polling and module layout are suite-wide**
+and identical in every carrier — the authoritative spec is
+[`ha-carrier-template/scaffold/CLAUDE.md`](https://github.com/ha-parcel-integrations/ha-carrier-template/blob/main/scaffold/CLAUDE.md).
+Where this repo diverges from it, that is recorded below under
+*Divergences from the scaffold*.
+
 **Suite-wide tripwires, kept inline on purpose:**
 - **First refresh in `__init__.py`, before `async_forward_entry_setups`** — from
   a forwarded platform HA can't catch `ConfigEntryNotReady` and half-sets-up the
@@ -93,54 +99,41 @@ free text.
   physical-security leak. A QR `image` entity is a possible fast-follow, out of
   scope for now.
 
-## Options and reloads
+## Divergences from the scaffold
 
-The account hub's options flow is one sectioned form; it calls
-`async_schedule_reload` on submit and registers **no** update listener (combining
-a listener with a reload-on-update flow is deprecated, error in HA 2026.12+). A
-tracking hub's options flow instead registers `_async_tracking_options_updated`
-as an update listener and applies a code addition/removal immediately via
-`async_request_refresh` — no reload, since adding a barcode has nothing to
-re-authenticate. Do not swap these two patterns between the entry types.
+Everything not listed here follows the scaffold exactly.
 
-## Dynamic polling
+*Two entry types, two options models — do not swap them.* The **account hub**
+uses one sectioned form calling `async_schedule_reload` with no update
+listener. A **tracking hub** instead registers
+`_async_tracking_options_updated` as an update listener and applies a code
+add/remove immediately via `async_request_refresh` — no reload, since adding a
+barcode has nothing to re-authenticate.
 
-Both coordinators run the suite's dynamic, status-driven polling
-(`carrier-research/dynamic-polling.md`) **unconditionally** — no user-facing
-interval option, `auto` is not a choice, it is the only mode. This is ahead of
-where most of the suite currently sits (`ha-postnl`/`ha-gls` still expose the
-Phase 1 hybrid dropdown); InPost converged straight to the final shape by
-deliberate choice, and a config entry upgrading from the old numeric
-`refresh_interval` has that option silently dropped rather than preserved.
-The account hub never stops polling (`stop_when_empty=False` — an account can
-gain a new parcel between polls with nothing to trigger a refresh); a tracking
-hub suspends polling entirely when it has no tracked codes
-(`stop_when_empty=True`).
+*Dynamic polling* — both coordinators run it **unconditionally**: no
+user-facing interval option, `auto` is not a choice but the only mode. This is
+ahead of most of the suite (`ha-postnl`/`ha-gls` still expose the Phase 1
+hybrid dropdown); InPost converged straight to the final shape by deliberate
+choice, and an entry upgrading from the old numeric `refresh_interval` has that
+option silently dropped rather than preserved. The account hub **never stops**
+(`stop_when_empty=False` — an account can gain a parcel between polls with
+nothing to trigger a refresh); a tracking hub suspends entirely with no tracked
+codes (`stop_when_empty=True`).
 
-## Module layout
+*Module layout* — two independent backends:
 
 | File | Carrier-specific? |
 |---|---|
-| `api.py` (SMS auth, token refresh, parcel list, `InPostTrackingApiClient` for the keyless per-country endpoint, error types) | **yes** |
-| `const.py` (domain, URLs, `ParcelStatus`, status maps, `TRACKING_URL_BY_COUNTRY`, `CAPABILITIES_BY_VARIANT`, option keys) | partly (URLs, maps) |
-| `parcels.py` (`normalize_parcel` for the account inbox, `normalize_tracking_parcel` for public tracking — two independent pure functions, no I/O) | partly (`STATUS_MAP`, `TRACKING_STATUS_MAP`) |
-| `coordinator.py` (`InPostCoordinator` + `InPostTrackingCoordinator(InPostCoordinator)`; fetch, cache, event firing) | mostly not |
-| `config_flow.py` (menu picks account vs. tracking; 2-step phone→SMS for the account, country + codes for tracking; reauth, options) | partly |
-| `services.py` / `services.yaml` (`track_parcel` / `untrack_parcel`, tracking hubs only) | **yes** |
-| `sensor.py` / `button.py` / `calendar.py` / `device_trigger.py` | no |
-| `diagnostics.py` | partly (`TO_REDACT`, incl. `qrCode`/`openCode`) |
+| `api.py` (SMS auth, token refresh, parcel list, plus `InPostTrackingApiClient` for the keyless per-country endpoint) | **yes** |
+| `const.py` (`TRACKING_URL_BY_COUNTRY`, `CAPABILITIES_BY_VARIANT`, `STATUS_MAP` + `TRACKING_STATUS_MAP`) | partly |
+| `parcels.py` (`normalize_parcel` for the account inbox, `normalize_tracking_parcel` for public tracking — two independent pure functions) | partly |
+| `coordinator.py` (`InPostCoordinator` + `InPostTrackingCoordinator(InPostCoordinator)`) | mostly not |
+| `config_flow.py` (menu picks account vs tracking) | partly |
+| `services.py` | **yes** — tracking hubs only |
+| `diagnostics.py` | partly (`TO_REDACT` incl. `qrCode`/`openCode`) |
 
 `__init__.py` branches once, on `CONF_COUNTRY in entry.data`, to pick the
-account vs. tracking client/coordinator/services wiring — see the backend
-split at the top of this file. `parcels.py` is free of I/O
-and HA objects so the per-carrier part stays unit-testable. Config:
-`ConfigEntry.runtime_data` (typed, no `hass.data`), `PARALLEL_UPDATES = 0`,
-coordinator takes `config_entry=entry`. `aiohttp.ClientError` is caught **per
-parcel** in the gather loop (one bad parcel doesn't fail the poll) but **not**
-around the whole update (coordinator wraps that). Entities: `has_entity_name` +
-`translation_key`, `icons.json`, translated units, `_attr_attribution`,
-`_unrecorded_attributes` on anything with a parcel list or `raw`. Over-redact
-diagnostics.
+account vs tracking wiring.
 
 ## Running tests
 
