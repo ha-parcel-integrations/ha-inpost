@@ -128,14 +128,34 @@ async def test_401_triggers_refresh_then_retry():
 
 
 async def test_refresh_keeps_old_refresh_token_when_response_omits_it():
+    """InPost rotates only the access token; the stored refresh token stays."""
     session = _session(
         (401, None),
         (200, {"authToken": "acc-2"}),  # no new refreshToken
+        (200, response(ready_sample())),
+    )
+    persisted = []
+    client = InPostApiClient(
+        session, "acc-1", "ref-1", on_tokens_updated=lambda a, r: persisted.append((a, r))
+    )
+
+    parcels = await client.async_get_parcels()
+
+    assert len(parcels) == 1
+    assert client.tokens == ("acc-2", "ref-1")
+    # the partially rotated pair still reaches the persistence callback
+    assert persisted == [("acc-2", "ref-1")]
+
+
+async def test_refresh_without_any_token_demands_reauth():
+    """A 200 refresh that carries no authToken at all is a dead session."""
+    session = _session(
+        (401, None),
+        (200, {"pushIdStatus": "ok"}),  # no tokens at all
         (200, response()),
     )
     client = InPostApiClient(session, "acc-1", "ref-1")
     with pytest.raises(InPostAuthReauthRequired):
-        # authToken present but refreshToken missing -> not a valid pair
         await client.async_get_parcels()
 
 

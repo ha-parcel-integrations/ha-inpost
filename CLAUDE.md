@@ -68,7 +68,12 @@ free text.
   never diagnostics). A 401 triggers one refresh + retry; a *failed* refresh →
   `InPostAuthReauthRequired` → `ConfigEntryAuthFailed` → SMS reauth; a refresh
   *transport* error stays `InPostApiError` → retry. Rotated tokens are persisted
-  via `on_tokens_updated`. The config flow is **two-step** (phone → SMS code) for
+  via `on_tokens_updated`. A successful refresh usually rotates **only the
+  access token** (live 2026-09: `['authToken', 'pushIdStatus',
+  'reauthenticationRequired']`, no `refreshToken`) — the stored refresh token
+  stays valid and is kept, not treated as a dead session; the access token
+  lives ~2 h, so this path runs on every poll cycle past that. The config flow
+  is **two-step** (phone → SMS code) for
   setup and reauth; reauth fixes the phone to the entry's, so it can't rebind to
   another account.
 - **Status strategy**: the detailed status maps first, then falls back to the
