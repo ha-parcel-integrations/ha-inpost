@@ -18,8 +18,8 @@ Contract the rest of the integration relies on:
 * ``aiohttp.ClientError`` propagates untouched where the coordinator can wrap it
   into ``UpdateFailed``.
 
-Everything here is written from InPost's documented mobile-API behaviour. It has
-not yet been exercised against an account we control — see CLAUDE.md.
+Auth, the token refresh lifecycle and the parcel-list endpoint are confirmed
+against real accounts — see CLAUDE.md.
 """
 from __future__ import annotations
 
