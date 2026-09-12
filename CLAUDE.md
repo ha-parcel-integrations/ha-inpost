@@ -111,11 +111,11 @@ add/remove immediately via `async_request_refresh` — no reload, since adding a
 barcode has nothing to re-authenticate.
 
 *Dynamic polling* — both coordinators run it **unconditionally**: no
-user-facing interval option, `auto` is not a choice but the only mode. This is
-ahead of most of the suite (`ha-postnl`/`ha-gls` still expose the Phase 1
-hybrid dropdown); InPost converged straight to the final shape by deliberate
-choice, and an entry upgrading from the old numeric `refresh_interval` has that
-option silently dropped rather than preserved. The account hub **never stops**
+user-facing interval option, `auto` is not a choice but the only mode. InPost
+converged straight to that shape by deliberate choice, ahead of the suite-wide
+convergence that finished on 2026-09-12; an entry upgrading from the old
+numeric `refresh_interval` has that option silently dropped rather than
+preserved. The account hub **never stops**
 (`stop_when_empty=False` — an account can gain a parcel between polls with
 nothing to trigger a refresh); a tracking hub suspends entirely with no tracked
 codes (`stop_when_empty=True`).
