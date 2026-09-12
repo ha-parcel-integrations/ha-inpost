@@ -14,10 +14,15 @@ async def test_diagnostics_redacts_pii_and_locker_codes(hass):
     entry.options = {"delivered_filter_type": "days"}
     entry.runtime_data.coordinator.data = [normalize_parcel(ready_sample())]
     entry.runtime_data.coordinator.delivered = []
+    entry.runtime_data.coordinator.delivered_codes = set()
 
     result = await async_get_config_entry_diagnostics(hass, entry)
 
-    assert result["counts"] == {"incoming_active": 1, "delivered": 0}
+    assert result["counts"] == {
+        "incoming_active": 1,
+        "delivered": 0,
+        "skipped_from_fetch": 0,
+    }
     parcel = result["incoming"][0]
     assert parcel["barcode"] == "**REDACTED**"
     assert parcel["sender"] == "**REDACTED**"
@@ -51,6 +56,7 @@ async def test_diagnostics_redacts_receiver_object_whole(hass):
     }
     entry.runtime_data.coordinator.data = [normalize_parcel(raw)]
     entry.runtime_data.coordinator.delivered = []
+    entry.runtime_data.coordinator.delivered_codes = set()
 
     result = await async_get_config_entry_diagnostics(hass, entry)
 
