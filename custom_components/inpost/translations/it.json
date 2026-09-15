@@ -115,7 +115,7 @@
       "fields": {
         "tracking_code": {
           "name": "Codice di tracciamento",
-          "description": "Il numero di tracciamento InPost."
+          "description": "Il codice di tracciamento InPost."
         },
         "country": {
           "name": "Paese",
@@ -129,7 +129,7 @@
       "fields": {
         "tracking_code": {
           "name": "Codice di tracciamento",
-          "description": "Il numero di tracciamento InPost da smettere di tracciare."
+          "description": "Il codice di tracciamento InPost da smettere di tracciare."
         },
         "country": {
           "name": "Paese",

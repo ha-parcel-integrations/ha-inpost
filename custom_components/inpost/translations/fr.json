@@ -6,7 +6,7 @@
         "title": "Configurer InPost",
         "menu_options": {
           "account": "Compte (Pologne, importation automatique)",
-          "tracking": "Numéros de suivi"
+          "tracking": "Codes de suivi"
         }
       },
       "account": {
@@ -21,7 +21,7 @@
       },
       "tracking": {
         "title": "Configurer le suivi InPost",
-        "description": "Créez un hub pour les numéros de suivi ajoutés manuellement.",
+        "description": "Créez un hub pour les codes de suivi ajoutés manuellement.",
         "data": {
           "country": "Pays"
         }
@@ -62,7 +62,7 @@
       "parcels": {
         "title": "Colis suivis",
         "data": {
-          "tracking_codes": "Numéros de suivi"
+          "tracking_codes": "Codes de suivi"
         }
       },
       "settings": {
@@ -111,11 +111,11 @@
   "services": {
     "track_parcel": {
       "name": "Suivre un colis",
-      "description": "Commencer à suivre un colis InPost à l'aide de son numéro de suivi.",
+      "description": "Commencer à suivre un colis InPost à l'aide de son code de suivi.",
       "fields": {
         "tracking_code": {
-          "name": "Numéro de suivi",
-          "description": "Le numéro de suivi InPost."
+          "name": "Code de suivi",
+          "description": "Le code de suivi InPost."
         },
         "country": {
           "name": "Pays",
@@ -128,8 +128,8 @@
       "description": "Arrêter de suivre un colis InPost à l'aide de son numéro de suivi.",
       "fields": {
         "tracking_code": {
-          "name": "Numéro de suivi",
-          "description": "Le numéro de suivi InPost à ne plus suivre."
+          "name": "Code de suivi",
+          "description": "Le code de suivi InPost à ne plus suivre."
         },
         "country": {
           "name": "Pays",

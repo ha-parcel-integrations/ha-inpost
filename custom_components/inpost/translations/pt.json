@@ -6,7 +6,7 @@
         "title": "Configurar o InPost",
         "menu_options": {
           "account": "Conta (Polónia, importação automática)",
-          "tracking": "Números de rastreio"
+          "tracking": "Códigos de rastreio"
         }
       },
       "account": {
@@ -21,7 +21,7 @@
       },
       "tracking": {
         "title": "Configurar rastreio InPost",
-        "description": "Crie um hub para números de rastreio adicionados manualmente.",
+        "description": "Crie um hub para códigos de rastreio adicionados manualmente.",
         "data": {
           "country": "País"
         }
@@ -62,7 +62,7 @@
       "parcels": {
         "title": "Encomendas rastreadas",
         "data": {
-          "tracking_codes": "Números de rastreio"
+          "tracking_codes": "Códigos de rastreio"
         }
       },
       "settings": {
@@ -111,11 +111,11 @@
   "services": {
     "track_parcel": {
       "name": "Rastrear encomenda",
-      "description": "Comece a rastrear uma encomenda InPost pelo código de rastreamento.",
+      "description": "Comece a rastrear uma encomenda InPost pelo código de rastreio.",
       "fields": {
         "tracking_code": {
-          "name": "Código de rastreamento",
-          "description": "O número de rastreamento InPost."
+          "name": "Código de rastreio",
+          "description": "O código de rastreio InPost."
         },
         "country": {
           "name": "País",
@@ -125,11 +125,11 @@
     },
     "untrack_parcel": {
       "name": "Deixar de rastrear encomenda",
-      "description": "Pare de rastrear uma encomenda InPost pelo código de rastreamento.",
+      "description": "Pare de rastrear uma encomenda InPost pelo código de rastreio.",
       "fields": {
         "tracking_code": {
-          "name": "Código de rastreamento",
-          "description": "O número de rastreamento InPost a deixar de rastrear."
+          "name": "Código de rastreio",
+          "description": "O código de rastreio InPost a deixar de rastrear."
         },
         "country": {
           "name": "País",

@@ -6,7 +6,7 @@
         "title": "Configurar InPost",
         "menu_options": {
           "account": "Cuenta (Polonia, importación automática)",
-          "tracking": "Números de seguimiento"
+          "tracking": "Códigos de seguimiento"
         }
       },
       "account": {
@@ -21,7 +21,7 @@
       },
       "tracking": {
         "title": "Configurar seguimiento de InPost",
-        "description": "Crea un hub para números de seguimiento añadidos manualmente.",
+        "description": "Crea un hub para códigos de seguimiento añadidos manualmente.",
         "data": {
           "country": "País"
         }
@@ -62,7 +62,7 @@
       "parcels": {
         "title": "Paquetes seguidos",
         "data": {
-          "tracking_codes": "Números de seguimiento"
+          "tracking_codes": "Códigos de seguimiento"
         }
       },
       "settings": {
@@ -115,7 +115,7 @@
       "fields": {
         "tracking_code": {
           "name": "Código de seguimiento",
-          "description": "El número de seguimiento de InPost."
+          "description": "El código de seguimiento de InPost."
         },
         "country": {
           "name": "País",
@@ -129,7 +129,7 @@
       "fields": {
         "tracking_code": {
           "name": "Código de seguimiento",
-          "description": "El número de seguimiento de InPost que se dejará de seguir."
+          "description": "El código de seguimiento de InPost que se dejará de seguir."
         },
         "country": {
           "name": "País",

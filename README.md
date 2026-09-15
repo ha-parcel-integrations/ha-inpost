@@ -73,7 +73,7 @@ Copy `custom_components/inpost` into your `config/custom_components/` folder and
 Add the integration via **Settings → Devices & Services → Add Integration → InPost**, then choose one of these paths:
 
 - **Account (Poland, auto-import):** enter the phone number registered with your InPost account and then the SMS code.
-- **Tracking numbers:** select the delivery market (PL, IT, PT or GB), then add tracking numbers through **Configure** or the services below. Create another hub for a different market when needed.
+- **Tracking codes:** select the delivery market (PL, IT, PT or GB), then add tracking codes through **Configure** or the services below. Create another hub for a different market when needed.
 
 For the account path:
 

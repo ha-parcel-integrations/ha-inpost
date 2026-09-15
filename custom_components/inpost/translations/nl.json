@@ -6,7 +6,7 @@
         "title": "InPost instellen",
         "menu_options": {
           "account": "Account (Polen, automatisch importeren)",
-          "tracking": "Trackingnummers"
+          "tracking": "Trackingcodes"
         }
       },
       "account": {
@@ -21,7 +21,7 @@
       },
       "tracking": {
         "title": "InPost-tracking instellen",
-        "description": "Maak een hub voor handmatig toegevoegde trackingnummers.",
+        "description": "Maak een hub voor handmatig toegevoegde trackingcodes.",
         "data": {
           "country": "Land"
         }
@@ -62,7 +62,7 @@
       "parcels": {
         "title": "Pakketten beheren",
         "data": {
-          "tracking_codes": "Trackingnummers"
+          "tracking_codes": "Trackingcodes"
         }
       },
       "settings": {
@@ -115,7 +115,7 @@
       "fields": {
         "tracking_code": {
           "name": "Trackingcode",
-          "description": "Het InPost-trackingnummer."
+          "description": "De InPost-trackingcode."
         },
         "country": {
           "name": "Land",
@@ -129,7 +129,7 @@
       "fields": {
         "tracking_code": {
           "name": "Trackingcode",
-          "description": "Het InPost-trackingnummer om niet meer te volgen."
+          "description": "De InPost-trackingcode om niet meer te volgen."
         },
         "country": {
           "name": "Land",
