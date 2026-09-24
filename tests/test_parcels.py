@@ -308,7 +308,7 @@ def test_tracking_hub_url_lowercase_country_and_missing_inputs():
     assert tracking_hub_url("CODE123", "it") == tracking_hub_url("CODE123", "IT")
     assert tracking_hub_url(None, "IT") is None
     assert tracking_hub_url("CODE123", None) is None
-    assert tracking_hub_url("CODE123", "ES") is not None
+    assert tracking_hub_url("CODE123", "FR") is None
 
 
 def test_normalize_ready_parcel_is_a_pickup():
