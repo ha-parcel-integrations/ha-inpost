@@ -85,7 +85,7 @@ TRACKING_URL = "https://inpost.pl/sledzenie-przesylek?number={tracking_code}"
 # share this host and response shape; country remains entry routing data so a
 # future national backend can diverge without migrating existing hubs.
 EASY_TRACKING_URL = "https://inposteasy.com/api/tracking/{tracking_code}"
-TRACKING_COUNTRIES = ("PL", "IT", "PT", "GB")
+TRACKING_COUNTRIES = ("PL", "IT", "PT", "GB", "ES")
 DEFAULT_TRACKING_COUNTRY = "PL"
 
 # Consumer tracking deep link per country, for a tracking-hub parcel's ``url``
@@ -98,6 +98,7 @@ TRACKING_URL_BY_COUNTRY = {
     "IT": "https://inpost.it/trova-il-tuo-pacco?number={tracking_code}",
     "PT": "https://www.inpost.pt/seguimento-do-envio/?exp={tracking_code}&language=pt&pais=PT",
     "GB": "https://inpost.co.uk/tracking/result?parcel_code={tracking_code}",
+    "ES": "https://www.inpost.es/seguimiento-del-envio/?exp={tracking_code}&language=ES",
 }
 
 # Tokens are stored in the config entry's data (not options) so they survive a

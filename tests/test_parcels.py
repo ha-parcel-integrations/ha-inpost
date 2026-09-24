@@ -294,6 +294,7 @@ def test_tracking_capabilities_match_what_normalize_tracking_parcel_returns():
         ("IT", "inpost.it"),
         ("PT", "inpost.pt"),
         ("GB", "inpost.co.uk"),
+        ("ES", "inpost.es"),
     ],
 )
 def test_tracking_hub_url_per_country(country, expected_host):
@@ -307,7 +308,7 @@ def test_tracking_hub_url_lowercase_country_and_missing_inputs():
     assert tracking_hub_url("CODE123", "it") == tracking_hub_url("CODE123", "IT")
     assert tracking_hub_url(None, "IT") is None
     assert tracking_hub_url("CODE123", None) is None
-    assert tracking_hub_url("CODE123", "ES") is None
+    assert tracking_hub_url("CODE123", "ES") is not None
 
 
 def test_normalize_ready_parcel_is_a_pickup():

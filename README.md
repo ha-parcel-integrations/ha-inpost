@@ -45,7 +45,7 @@ Part of the [ha-parcel-integrations](https://ha-parcel-integrations.github.io/) 
 ## Features
 
 - Signs in the way the InPost app does — phone number plus an SMS code — and then reads your whole parcel inbox automatically. Nothing to type per parcel.
-- Public tracking-number hubs for PL, IT, PT and GB; add codes through **Configure** or `inpost.track_parcel`.
+- Public tracking-number hubs for PL, IT, PT, GB and ES; add codes through **Configure** or `inpost.track_parcel`.
 - Per-parcel sensor with the canonical status (`in_transit` / `out_for_delivery` / `at_pickup_point` / `delivered` / …), InPost's own status text, and — for a parcel waiting in a locker — the Paczkomat name.
 - Summary sensors: incoming parcels, parcels awaiting pickup and recently delivered parcels.
 - Events + device triggers for no-code automations (parcel registered, status changed, delivered).
@@ -73,7 +73,7 @@ Copy `custom_components/inpost` into your `config/custom_components/` folder and
 Add the integration via **Settings → Devices & Services → Add Integration → InPost**, then choose one of these paths:
 
 - **Account (Poland, auto-import):** enter the phone number registered with your InPost account and then the SMS code.
-- **Tracking codes:** select the delivery market (PL, IT, PT or GB), then add tracking codes through **Configure** or the services below. Create another hub for a different market when needed.
+- **Tracking codes:** select the delivery market (PL, IT, PT, GB or ES), then add tracking codes through **Configure** or the services below. Create another hub for a different market when needed.
 
 For the account path:
 
