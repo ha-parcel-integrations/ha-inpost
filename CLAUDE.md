@@ -10,7 +10,7 @@ layer.
 **Two structurally independent backends, one repo.** InPost started as the
 suite's first **account-based, SMS-login** carrier (Poland only; auto-imports
 the account's parcels, no manual services). It has since grown a second,
-**keyless public-tracking** model (`PL`/`IT`/`PT`/`GB`) for barcode-only setup:
+**keyless public-tracking** model (`PL`/`IT`/`PT`/`GB`/`ES`) for barcode-only setup:
 no login, one config entry per country, parcels added/removed via the
 `track_parcel`/`untrack_parcel` services. The two live side by side rather than
 converging into one coordinator/capability shape the way `ha-gls`/`ha-dpd`
@@ -58,7 +58,7 @@ Where this repo diverges from it, that is recorded below under
 
 InPost is the Paczkomat locker network. First account-based SMS-login carrier
 and first with a real "waiting in a locker" state — that part stays Poland-only
-(the account API has no other-country variant). Public tracking (`PL`/`IT`/`PT`/`GB`)
+(the account API has no other-country variant). Public tracking (`PL`/`IT`/`PT`/`GB`/`ES`)
 is a separate, later addition; see the backend split at the top of this file.
 **Confirmed against a real account 2026-08-15** — auth, the parcel-list
 endpoint and the happy path all round-tripped correctly; the fuller detailed
