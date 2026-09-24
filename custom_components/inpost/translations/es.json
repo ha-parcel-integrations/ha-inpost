@@ -166,7 +166,7 @@
         "name": "Próxima entrega"
       },
       "awaiting_pickup": {
-        "name": "Pendientes de recogida",
+        "name": "Listo para recoger",
         "unit_of_measurement": "paquetes"
       },
       "delivered_parcels": {

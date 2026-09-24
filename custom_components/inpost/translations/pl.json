@@ -166,7 +166,7 @@
         "name": "Następne doręczenie"
       },
       "awaiting_pickup": {
-        "name": "Oczekujące na odbiór",
+        "name": "Oczekuje na odbiór",
         "unit_of_measurement": "paczki"
       },
       "delivered_parcels": {
