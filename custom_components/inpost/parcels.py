@@ -318,10 +318,10 @@ def tracking_hub_url(tracking_code: str | None, country: str | None) -> str | No
 
 def _name_of(customer: Any) -> str | None:
     """Return the ``.name`` of an InPost customer object, or ``None``."""
-    if isinstance(customer, dict):
-        name = customer.get("name")
-        if isinstance(name, str) and name.strip():
-            return name
+    # A live account showed ``sender`` as a bare string, not an object.
+    name = customer.get("name") if isinstance(customer, dict) else customer
+    if isinstance(name, str) and name.strip():
+        return name
     return None
 
 

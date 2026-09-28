@@ -370,6 +370,15 @@ def test_normalize_blank_names_become_none():
     assert parcel["receiver"] is None
 
 
+def test_normalize_accepts_a_bare_string_sender():
+    raw = in_transit_sample()
+    raw["sender"] = "Allegro"
+    raw["receiver"] = "   "
+    parcel = normalize_parcel(raw)
+    assert parcel["sender"] == "Allegro"
+    assert parcel["receiver"] is None
+
+
 # ---------------------------------------------------------------------------
 # sorting and the delivered filter
 # ---------------------------------------------------------------------------
