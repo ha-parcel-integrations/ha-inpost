@@ -8,14 +8,15 @@ notes* is suite-wide; when in doubt check the template or a sibling repo. No DTO
 layer.
 
 **Two structurally independent backends, one repo.** InPost started as the
-suite's first **account-based, SMS-login** carrier (Poland only; auto-imports
-the account's parcels, no manual services). It has since grown a second,
+suite's first **account-based** carrier with an SMS login (Poland only;
+auto-imports the account's parcels, no manual services); new setups now sign
+in through the InPost Group sign-in page instead. It has since grown a second,
 **keyless public-tracking** model (`PL`/`IT`/`PT`/`GB`/`ES`) for barcode-only setup:
 no login, one config entry per country, parcels added/removed via the
 `track_parcel`/`untrack_parcel` services. The two live side by side rather than
 converging into one coordinator/capability shape the way `ha-gls`/`ha-dpd`
 converge same-model countries — deliberately, because the auth models
-themselves differ in kind (SMS token dance vs. keyless GET), not just the data
+themselves differ in kind (a signed-in token pair vs. keyless GET), not just the data
 depth. See `CAPABILITIES_BY_VARIANT` in `const.py` for the two capability sets.
 
 ## Shared conventions — fetch when relevant
@@ -33,9 +34,10 @@ you act in one of these areas:
 | consider "fixing" a lint/pattern the skill flags (poll interval, inline client) | *Deliberate skill divergences* |
 | commit, bump, tag, release, or write release notes; add a feature without a test | *Workflow / Commits / Versioning / Testing* |
 
-**API mechanics live in `carrier-research/inpost/api/` (private research repo)** — the SMS auth
-flow, the token-refresh endpoints, the `/v3/parcels/tracked` list, the bare
-`Authorization` header, and the two-tier status vocabulary. Do not duplicate them
+**API mechanics live in `carrier-research/inpost/api/` (private research repo)** — the group
+sign-in and the legacy SMS auth, both token-refresh endpoints, the
+`/v3/parcels/tracked` list, the two `Authorization` header shapes, and the
+two-tier status vocabulary. Do not duplicate them
 here.
 
 **Structure, options flow, dynamic polling and module layout are suite-wide**
@@ -56,9 +58,10 @@ Where this repo diverges from it, that is recorded below under
 
 ## Carrier-specific decisions (integration only)
 
-InPost is the Paczkomat locker network. First account-based SMS-login carrier
-and first with a real "waiting in a locker" state — that part stays Poland-only
-(the account API has no other-country variant). Public tracking (`PL`/`IT`/`PT`/`GB`/`ES`)
+InPost is the Paczkomat locker network. First account-based carrier with an
+SMS login and first with a real "waiting in a locker" state — that part stays Poland-only
+(the same sign-in serves other markets' accounts, but their parcels live on a
+different backend this integration does not read). Public tracking (`PL`/`IT`/`PT`/`GB`/`ES`)
 is a separate, later addition; see the backend split at the top of this file.
 **Confirmed against a real account 2026-08-15** — auth, the parcel-list
 endpoint and the happy path all round-tripped correctly; the fuller detailed
@@ -70,18 +73,36 @@ turned out to share the exact same status vocabulary as the top-level
 `status` field, so history entries now carry a mapped `status` too, not just
 free text.
 
+- **Sign-in: the InPost Group page, pasted back.** The login page needs a
+  captcha and redirects only to an InPost-owned callback, so the config flow
+  shows a PKCE sign-in link (`account/oauth.py`), the user signs in in their
+  own browser and pastes the callback URL back; it is validated for
+  host/path/state before the code is ever exchanged. Setup and reauth are the
+  same one step. The same link is kept for the whole flow, so a retry does not
+  invalidate a link already opened.
+- **Two token kinds, one inbox — `CONF_AUTH_METHOD` picks.** `sso` entries hold
+  the sign-in's OAuth pair: `Bearer` header, refreshed at the sign-in's token
+  endpoint (a 400/401 there is a dead session). Entries without the key are
+  from the SMS era and keep the app's own pair: bare header, refreshed at
+  `/v1/authenticate`. **Existing SMS entries are never forced over**; their next
+  reauth moves them to `sso` in place (same entry, same entities). Do not add a
+  startup migration or bring the SMS login steps back.
+- **`unique_id` is the token's `phone` claim**, the same bare 9-digit national
+  number SMS entries were keyed on, so the same account cannot be added twice
+  across the two kinds, and a reauth that signs in to another phone aborts
+  `wrong_account` instead of rebinding the entry. Do not switch it to `sub`.
+  A token whose `market` claim is not `PL` is refused (`market_not_supported`):
+  such accounts live on a different parcel backend this integration does not
+  read.
 - **Token handling (do not weaken).** Tokens live in `entry.data` (never options,
   never diagnostics). A 401 triggers one refresh + retry; a *failed* refresh →
-  `InPostAuthReauthRequired` → `ConfigEntryAuthFailed` → SMS reauth; a refresh
-  *transport* error stays `InPostApiError` → retry. Rotated tokens are persisted
-  via `on_tokens_updated`. A successful refresh usually rotates **only the
-  access token** (live 2026-09: `['authToken', 'pushIdStatus',
-  'reauthenticationRequired']`, no `refreshToken`) — the stored refresh token
-  stays valid and is kept, not treated as a dead session; the access token
-  lives ~2 h, so this path runs on every poll cycle past that. The config flow
-  is **two-step** (phone → SMS code) for
-  setup and reauth; reauth fixes the phone to the entry's, so it can't rebind to
-  another account.
+  `InPostAuthReauthRequired` → `ConfigEntryAuthFailed` → reauth; a refresh
+  *transport* error, 429 or 5xx stays `InPostApiError` → retry. Rotated tokens
+  are persisted via `on_tokens_updated`. Neither kind reliably rotates its
+  refresh token (the app's refresh returns `authToken` alone, the sign-in's has
+  been seen returning the same refresh token): keep the stored one when none
+  comes back, persist a new one when it does. Access tokens live ~2 h, so the
+  refresh path runs on every poll cycle past that.
 - **Status strategy**: the detailed status maps first, then falls back to the
   coarse status group, so an unmapped detailed value still buckets sensibly (and
   still warns). `operations.collect == true` forces `pickup: true` even for an
@@ -127,7 +148,8 @@ owns its client, coordinator, normaliser and status map under
 
 | Module | Holds |
 |---|---|
-| `account/client.py` | SMS login helpers, `InPostApiClient` (token refresh, parcel list), `InPostApiError`/`InPostAuthReauthRequired`, the legacy-host URLs |
+| `account/client.py` | `async_exchange_code`, `InPostApiClient` (both token kinds, refresh, parcel list), `InPostApiError`/`InPostAuthReauthRequired`, the inbox host URLs |
+| `account/oauth.py` | Pure sign-in helpers: PKCE, the authorization URL, callback validation, token-claim decoding |
 | `account/coordinator.py` | `InPostCoordinator` and the dynamic-polling helpers both sources use |
 | `account/parcels.py` | `normalize_parcel`, `STATUS_MAP` + `STATUS_GROUP_MAP`, and the suite-wide helpers (`parse_iso`, sort, delivered filter, `NEW_ISSUE_URL`) |
 | `tracking/client.py` | `InPostTrackingApiClient`, `EASY_TRACKING_URL` |

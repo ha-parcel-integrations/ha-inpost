@@ -57,6 +57,12 @@ DEFAULT_TRACKING_COUNTRY = "PL"
 CONF_PHONE = "phone"
 CONF_AUTH_TOKEN = "auth_token"
 CONF_REFRESH_TOKEN = "refresh_token"
+# Which kind of token pair the entry holds. Entries from before the InPost
+# Group sign-in have no value and hold the app's own SMS-login pair; a reauth
+# moves them to the sign-in.
+CONF_AUTH_METHOD = "auth_method"
+AUTH_METHOD_SMS = "sms"
+AUTH_METHOD_SSO = "sso"
 CONF_COUNTRY = "country"
 CONF_PARCELS = "parcels"
 CONF_TRACKING_CODE = "tracking_code"

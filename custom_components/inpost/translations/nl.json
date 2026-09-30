@@ -10,13 +10,13 @@
         }
       },
       "account": {
-        "title": "InPost-account instellen",
-        "description": "Meld u aan zoals in de InPost-app: voer uw telefoonnummer in en InPost stuurt u een inlogcode per sms.",
+        "title": "Inloggen bij InPost",
+        "description": "Open deze link in een browser en log in met je InPost-account (telefoonnummer en sms-code):\n\n{authorize_url}\n\nDaarna laadt de pagina niet verder — dat is de bedoeling. Kopieer het volledige adres uit de adresbalk van je browser en plak het hieronder.",
         "data": {
-          "phone": "Telefoonnummer"
+          "callback_url": "Callback-URL"
         },
         "data_description": {
-          "phone": "Het mobiele nummer dat bij uw InPost-account hoort, bijvoorbeeld 600123456."
+          "callback_url": "Het adres dat begint met https://account.inpost-group.com/callback?code="
         }
       },
       "tracking": {
@@ -26,29 +26,24 @@
           "country": "Land"
         }
       },
-      "sms": {
-        "title": "Voer de sms-code in",
-        "description": "InPost heeft een inlogcode naar {phone} gestuurd. Voer deze hieronder in.",
-        "data": {
-          "sms_code": "Sms-code"
-        }
-      },
       "reauth_confirm": {
-        "title": "InPost-aanmelding verlopen",
-        "description": "InPost vraagt u opnieuw aan te melden. Er is een nieuwe inlogcode naar {phone} gestuurd — voer deze hieronder in.",
+        "title": "InPost-login verlopen",
+        "description": "InPost vraagt je opnieuw in te loggen. Open deze link in een browser en log in met hetzelfde account:\n\n{authorize_url}\n\nKopieer daarna het volledige adres uit de adresbalk van je browser en plak het hieronder.",
         "data": {
-          "sms_code": "Sms-code"
+          "callback_url": "Callback-URL"
         }
       }
     },
     "error": {
-      "invalid_phone": "Dit lijkt geen geldig telefoonnummer.",
-      "invalid_auth": "Deze code is niet geaccepteerd. Controleer de code en probeer het opnieuw.",
-      "cannot_connect": "Kan InPost niet bereiken. Probeer het opnieuw."
+      "invalid_auth": "InPost heeft de login geweigerd. Open de link opnieuw en log nog een keer in.",
+      "cannot_connect": "Kan InPost niet bereiken. Probeer het opnieuw.",
+      "invalid_redirect": "Dat lijkt niet het adres waar de loginpagina je naartoe stuurde. Kopieer na het inloggen het volledige adres.",
+      "market_not_supported": "Dit is geen Pools InPost-account. Alleen Poolse accounts kunnen worden geïmporteerd; voeg pakketten uit andere landen toe als trackingcode."
     },
     "abort": {
       "already_configured": "Dit InPost-account is al ingesteld.",
-      "reauth_successful": "InPost is opnieuw geverifieerd."
+      "reauth_successful": "InPost is opnieuw geverifieerd.",
+      "wrong_account": "Die login hoort bij een ander InPost-account. Log in met het account waarmee deze integratie is ingesteld."
     }
   },
   "options": {

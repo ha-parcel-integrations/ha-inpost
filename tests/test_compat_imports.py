@@ -18,8 +18,6 @@ def test_root_api_module_re_exports_both_clients():
     assert api.InPostApiClient is account_client.InPostApiClient
     assert api.InPostApiError is account_client.InPostApiError
     assert api.InPostAuthReauthRequired is account_client.InPostAuthReauthRequired
-    assert api.async_send_sms_code is account_client.async_send_sms_code
-    assert api.async_confirm_sms_code is account_client.async_confirm_sms_code
     assert api.InPostTrackingApiClient is tracking_client.InPostTrackingApiClient
 
 

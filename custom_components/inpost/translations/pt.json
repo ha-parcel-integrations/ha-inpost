@@ -10,13 +10,13 @@
         }
       },
       "account": {
-        "title": "Configurar conta InPost",
-        "description": "Inicie sessão como na aplicação InPost: introduza o seu número de telefone e a InPost enviar-lhe-á um código por SMS.",
+        "title": "Iniciar sessão na InPost",
+        "description": "Abra este link num navegador e inicie sessão com a sua conta InPost (número de telefone e código SMS):\n\n{authorize_url}\n\nDepois a página não termina de carregar — é normal. Copie o endereço completo da barra de endereços do navegador e cole-o abaixo.",
         "data": {
-          "phone": "Número de telefone"
+          "callback_url": "URL de retorno"
         },
         "data_description": {
-          "phone": "O número de telemóvel registado na sua conta InPost, por exemplo 600123456."
+          "callback_url": "O endereço que começa por https://account.inpost-group.com/callback?code="
         }
       },
       "tracking": {
@@ -26,29 +26,24 @@
           "country": "País"
         }
       },
-      "sms": {
-        "title": "Introduzir código SMS",
-        "description": "A InPost enviou um código de início de sessão para {phone}. Introduza-o abaixo.",
-        "data": {
-          "sms_code": "Código SMS"
-        }
-      },
       "reauth_confirm": {
         "title": "Sessão InPost expirada",
-        "description": "A InPost pede que inicie sessão novamente. Foi enviado um novo código para {phone}; introduza-o abaixo.",
+        "description": "A InPost pede que inicie sessão novamente. Abra este link num navegador e inicie sessão com a mesma conta:\n\n{authorize_url}\n\nDepois copie o endereço completo da barra de endereços do navegador e cole-o abaixo.",
         "data": {
-          "sms_code": "Código SMS"
+          "callback_url": "URL de retorno"
         }
       }
     },
     "error": {
-      "invalid_phone": "Não parece ser um número de telefone válido.",
-      "invalid_auth": "O código não foi aceite. Verifique-o e tente novamente.",
-      "cannot_connect": "Não foi possível contactar a InPost. Tente novamente."
+      "invalid_auth": "A InPost recusou o início de sessão. Abra o link novamente e inicie sessão outra vez.",
+      "cannot_connect": "Não foi possível contactar a InPost. Tente novamente.",
+      "invalid_redirect": "Isto não parece o endereço para onde a página de início de sessão o enviou. Copie o endereço completo depois de iniciar sessão.",
+      "market_not_supported": "Esta não é uma conta InPost polaca. Só é possível importar contas polacas; adicione encomendas de outros países como códigos de seguimento."
     },
     "abort": {
       "already_configured": "Esta conta InPost já está configurada.",
-      "reauth_successful": "A reautenticação da InPost foi bem-sucedida."
+      "reauth_successful": "A reautenticação da InPost foi bem-sucedida.",
+      "wrong_account": "Esse início de sessão pertence a outra conta InPost. Inicie sessão com a conta com que esta entrada foi configurada."
     }
   },
   "options": {

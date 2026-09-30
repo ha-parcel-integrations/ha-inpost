@@ -10,7 +10,14 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .account.client import InPostApiClient
 from .account.coordinator import InPostCoordinator
-from .const import CONF_AUTH_TOKEN, CONF_COUNTRY, CONF_REFRESH_TOKEN, PLATFORMS
+from .const import (
+    AUTH_METHOD_SMS,
+    CONF_AUTH_METHOD,
+    CONF_AUTH_TOKEN,
+    CONF_COUNTRY,
+    CONF_REFRESH_TOKEN,
+    PLATFORMS,
+)
 from .services import async_setup_services, async_unload_services
 from .tracking.client import InPostTrackingApiClient
 from .tracking.coordinator import InPostTrackingCoordinator
@@ -34,7 +41,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: InPostConfigEntry) -> bo
 
     Auth is header-based (a bearer-style token), not cookie-based, so the
     HA-managed shared session is fine — no per-entry cookie jar, and nothing to
-    close on unload. The SMS login already happened in the config flow; here we
+    close on unload. The sign-in already happened in the config flow; here we
     only have the stored token pair.
     """
     # The fixed interval option was retired in 1.1.0. Remove any value left
@@ -68,6 +75,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: InPostConfigEntry) -> bo
             entry.data[CONF_AUTH_TOKEN],
             entry.data[CONF_REFRESH_TOKEN],
             on_tokens_updated=_persist_tokens,
+            auth_method=entry.data.get(CONF_AUTH_METHOD, AUTH_METHOD_SMS),
         )
         coordinator = InPostCoordinator(hass, client, entry)
 

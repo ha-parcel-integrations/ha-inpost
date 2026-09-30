@@ -8,8 +8,6 @@ from .account.client import (
     InPostApiClient,
     InPostApiError,
     InPostAuthReauthRequired,
-    async_confirm_sms_code,
-    async_send_sms_code,
 )
 from .tracking.client import InPostTrackingApiClient
 
@@ -18,6 +16,4 @@ __all__ = [
     "InPostApiError",
     "InPostAuthReauthRequired",
     "InPostTrackingApiClient",
-    "async_confirm_sms_code",
-    "async_send_sms_code",
 ]

@@ -10,6 +10,8 @@ from custom_components.inpost.account.client import (
     InPostAuthReauthRequired,
 )
 from custom_components.inpost.const import (
+    AUTH_METHOD_SSO,
+    CONF_AUTH_METHOD,
     CONF_AUTH_TOKEN,
     CONF_PHONE,
     CONF_REFRESH_TOKEN,
@@ -53,15 +55,7 @@ async def test_dead_session_starts_reauth(hass):
     entry = _entry()
     entry.add_to_hass(hass)
 
-    # The failed setup auto-starts a reauth flow, whose first step texts an SMS —
-    # patch that so the flow does not reach the real network.
-    with (
-        patch(GET, new=AsyncMock(side_effect=InPostAuthReauthRequired("dead"))),
-        patch(
-            "custom_components.inpost.config_flow.async_send_sms_code",
-            new=AsyncMock(),
-        ),
-    ):
+    with patch(GET, new=AsyncMock(side_effect=InPostAuthReauthRequired("dead"))):
         assert not await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
 
@@ -131,3 +125,22 @@ async def test_per_parcel_sensor_spawn_and_remove(hass):
             )
             is None
         )
+
+
+async def test_sign_in_entry_uses_the_sign_in_token_kind(hass):
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title=PHONE,
+        unique_id=PHONE,
+        data={
+            CONF_PHONE: PHONE,
+            CONF_AUTH_METHOD: AUTH_METHOD_SSO,
+            CONF_AUTH_TOKEN: "acc",
+            CONF_REFRESH_TOKEN: "ref",
+        },
+    )
+    entry.add_to_hass(hass)
+    with patch(GET, new=AsyncMock(return_value=[])):
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+    assert entry.runtime_data.client._auth_method == AUTH_METHOD_SSO

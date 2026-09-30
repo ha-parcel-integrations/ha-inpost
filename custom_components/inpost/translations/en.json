@@ -10,13 +10,13 @@
         }
       },
       "account": {
-        "title": "Set up InPost account",
-        "description": "Sign in the way the InPost app does: enter your phone number and InPost will text you a login code.",
+        "title": "Sign in to InPost",
+        "description": "Open this link in a browser and sign in with your InPost account (phone number and SMS code):\n\n{authorize_url}\n\nAfterwards the page will not finish loading — that is expected. Copy the full address from your browser's address bar and paste it below.",
         "data": {
-          "phone": "Phone number"
+          "callback_url": "Callback URL"
         },
         "data_description": {
-          "phone": "The mobile number registered with your InPost account, e.g. 600123456."
+          "callback_url": "The address starting with https://account.inpost-group.com/callback?code="
         }
       },
       "tracking": {
@@ -26,29 +26,24 @@
           "country": "Country"
         }
       },
-      "sms": {
-        "title": "Enter the SMS code",
-        "description": "InPost texted a login code to {phone}. Enter it below.",
-        "data": {
-          "sms_code": "SMS code"
-        }
-      },
       "reauth_confirm": {
         "title": "InPost sign-in expired",
-        "description": "InPost needs you to sign in again. A fresh login code was texted to {phone} — enter it below.",
+        "description": "InPost needs you to sign in again. Open this link in a browser and sign in with the same account:\n\n{authorize_url}\n\nThen copy the full address from your browser's address bar and paste it below.",
         "data": {
-          "sms_code": "SMS code"
+          "callback_url": "Callback URL"
         }
       }
     },
     "error": {
-      "invalid_phone": "That does not look like a valid phone number.",
-      "invalid_auth": "That code was not accepted. Check it and try again.",
-      "cannot_connect": "Could not reach InPost. Please try again."
+      "invalid_auth": "InPost rejected the sign-in. Open the link again and sign in once more.",
+      "cannot_connect": "Could not reach InPost. Please try again.",
+      "invalid_redirect": "That does not look like the address the sign-in page sent you to. Make sure you copied the whole address after signing in.",
+      "market_not_supported": "This is not a Polish InPost account. Only Polish accounts can be imported; add parcels from other countries as tracking codes."
     },
     "abort": {
       "already_configured": "That InPost account is already set up.",
-      "reauth_successful": "InPost was reauthenticated successfully."
+      "reauth_successful": "InPost was reauthenticated successfully.",
+      "wrong_account": "That sign-in was for a different InPost account. Sign in with the account this entry was set up for."
     }
   },
   "options": {

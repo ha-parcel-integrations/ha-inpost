@@ -1,15 +1,19 @@
-"""Tests for the InPost config and options flow — the two-step SMS login."""
+"""Tests for the InPost config and options flow — the pasted-callback sign-in."""
 import json
 from pathlib import Path
 from unittest.mock import AsyncMock, patch
+from urllib.parse import parse_qs, urlparse
 
 import aiohttp
 from homeassistant.config_entries import SOURCE_USER
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.inpost.account.client import InPostApiError
-from custom_components.inpost.config_flow import normalize_phone, valid_phone
+from custom_components.inpost.account.client import (
+    InPostApiError,
+    InPostAuthReauthRequired,
+)
 from custom_components.inpost.const import (
+    CONF_AUTH_METHOD,
     CONF_AUTH_TOKEN,
     CONF_COUNTRY,
     CONF_DELIVERED_FILTER_AMOUNT,
@@ -21,22 +25,23 @@ from custom_components.inpost.const import (
     TRACKING_COUNTRIES,
 )
 
+from .tokens import make_jwt
+
 PHONE = "600123456"
-SEND = "custom_components.inpost.config_flow.async_send_sms_code"
-CONFIRM = "custom_components.inpost.config_flow.async_confirm_sms_code"
+EXCHANGE = "custom_components.inpost.config_flow.async_exchange_code"
+CALLBACK = "https://account.inpost-group.com/callback?code=the-code&state={state}"
 
 
-def test_normalize_phone_strips_and_drops_country_code():
-    assert normalize_phone("+48 600 123 456") == "600123456"
-    assert normalize_phone("0048600123456") == "600123456"
-    assert normalize_phone("600-123-456") == "600123456"
-    assert normalize_phone("") == ""
+def _tokens(market: str = "PL", phone: str | None = PHONE) -> tuple[str, str]:
+    claims = {"market": market, "phone_prefix": "+48"}
+    if phone is not None:
+        claims["phone"] = phone
+    return make_jwt(claims), "ref-1"
 
 
-def test_valid_phone_wants_nine_digits():
-    assert valid_phone("600123456")
-    assert not valid_phone("12345")
-    assert not valid_phone("6001234567")
+def _state(result) -> str:
+    url = result["description_placeholders"]["authorize_url"]
+    return parse_qs(urlparse(url).query)["state"][0]
 
 
 # ---------------------------------------------------------------------------
@@ -53,75 +58,103 @@ async def _start(hass):
     )
 
 
-async def test_full_sms_flow_creates_entry(hass):
+async def _paste(hass, result, exchange: AsyncMock, *, state: str | None = None):
+    with patch(EXCHANGE, new=exchange):
+        return await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {"callback_url": CALLBACK.format(state=state or _state(result))},
+        )
+
+
+async def test_sign_in_creates_an_entry_keyed_on_the_token_phone(hass):
     result = await _start(hass)
     assert result["step_id"] == "account"
+    assert result["description_placeholders"]["authorize_url"].startswith(
+        "https://account.inpost-group.com/oauth2/authorize?"
+    )
 
-    with patch(SEND, new=AsyncMock()) as send:
-        result = await hass.config_entries.flow.async_configure(
-            result["flow_id"], {CONF_PHONE: "+48 600 123 456"}
-        )
-    assert result["step_id"] == "sms"
-    send.assert_awaited_once()  # code was texted
-
-    with patch(CONFIRM, new=AsyncMock(return_value=("acc-1", "ref-1"))):
-        result = await hass.config_entries.flow.async_configure(
-            result["flow_id"], {"sms_code": "1234"}
-        )
+    tokens = _tokens()
+    exchange = AsyncMock(return_value=tokens)
+    result = await _paste(hass, result, exchange)
 
     assert result["type"] == "create_entry"
     assert result["title"] == PHONE
+    assert result["result"].unique_id == PHONE
     assert result["data"] == {
         CONF_PHONE: PHONE,
-        CONF_AUTH_TOKEN: "acc-1",
+        CONF_AUTH_METHOD: "sso",
+        CONF_AUTH_TOKEN: tokens[0],
         CONF_REFRESH_TOKEN: "ref-1",
     }
+    assert exchange.await_args.args[1] == "the-code"
 
 
-async def test_invalid_phone_is_rejected(hass):
+async def test_retry_keeps_the_same_sign_in_link(hass):
     result = await _start(hass)
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {CONF_PHONE: "12345"}
-    )
+    first_url = result["description_placeholders"]["authorize_url"]
+    result = await _paste(hass, result, AsyncMock(), state="wrong")
+    assert result["errors"] == {"base": "invalid_redirect"}
+    assert result["description_placeholders"]["authorize_url"] == first_url
+
+
+async def test_a_url_from_elsewhere_is_never_exchanged(hass):
+    result = await _start(hass)
+    exchange = AsyncMock()
+    with patch(EXCHANGE, new=exchange):
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {"callback_url": "https://evil.example/callback?code=x&state=y"},
+        )
+    assert result["errors"] == {"base": "invalid_redirect"}
+    exchange.assert_not_awaited()
+
+
+async def test_callback_without_a_code_is_rejected(hass):
+    result = await _start(hass)
+    exchange = AsyncMock()
+    with patch(EXCHANGE, new=exchange):
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {"callback_url": f"https://account.inpost-group.com/callback?state={_state(result)}"},
+        )
+    assert result["errors"] == {"base": "invalid_redirect"}
+    exchange.assert_not_awaited()
+
+
+async def test_rejected_code_surfaces_invalid_auth(hass):
+    result = await _start(hass)
+    result = await _paste(hass, result, AsyncMock(side_effect=InPostAuthReauthRequired("400")))
     assert result["step_id"] == "account"
-    assert result["errors"] == {"base": "invalid_phone"}
-
-
-async def test_send_sms_failure_surfaces_cannot_connect(hass):
-    result = await _start(hass)
-    with patch(SEND, new=AsyncMock(side_effect=aiohttp.ClientError("boom"))):
-        result = await hass.config_entries.flow.async_configure(
-            result["flow_id"], {CONF_PHONE: PHONE}
-        )
-    assert result["errors"] == {"base": "cannot_connect"}
-
-
-async def test_wrong_code_surfaces_invalid_auth(hass):
-    result = await _start(hass)
-    with patch(SEND, new=AsyncMock()):
-        result = await hass.config_entries.flow.async_configure(
-            result["flow_id"], {CONF_PHONE: PHONE}
-        )
-    with patch(CONFIRM, new=AsyncMock(side_effect=InPostApiError("HTTP 400"))):
-        result = await hass.config_entries.flow.async_configure(
-            result["flow_id"], {"sms_code": "0000"}
-        )
-    assert result["step_id"] == "sms"
     assert result["errors"] == {"base": "invalid_auth"}
 
 
-async def test_duplicate_phone_aborts_before_texting(hass):
+async def test_unreachable_sign_in_surfaces_cannot_connect(hass):
+    for error in (InPostApiError("HTTP 502"), aiohttp.ClientError("boom")):
+        result = await _start(hass)
+        result = await _paste(hass, result, AsyncMock(side_effect=error))
+        assert result["errors"] == {"base": "cannot_connect"}
+
+
+async def test_a_non_polish_account_is_refused(hass):
+    result = await _start(hass)
+    result = await _paste(hass, result, AsyncMock(return_value=_tokens(market="IT")))
+    assert result["errors"] == {"base": "market_not_supported"}
+
+
+async def test_a_token_without_a_phone_is_refused(hass):
+    result = await _start(hass)
+    result = await _paste(hass, result, AsyncMock(return_value=_tokens(phone=None)))
+    assert result["errors"] == {"base": "invalid_auth"}
+
+
+async def test_account_already_set_up_by_sms_aborts(hass):
     MockConfigEntry(domain=DOMAIN, unique_id=PHONE, data={CONF_PHONE: PHONE}).add_to_hass(
         hass
     )
     result = await _start(hass)
-    with patch(SEND, new=AsyncMock()) as send:
-        result = await hass.config_entries.flow.async_configure(
-            result["flow_id"], {CONF_PHONE: PHONE}
-        )
+    result = await _paste(hass, result, AsyncMock(return_value=_tokens()))
     assert result["type"] == "abort"
     assert result["reason"] == "already_configured"
-    send.assert_not_awaited()
 
 
 async def test_user_menu_routes_to_tracking_and_creates_country_hub(hass):
@@ -175,6 +208,7 @@ def test_options_menu_labels_are_translated_in_every_locale():
 
 
 def _entry(hass) -> MockConfigEntry:
+    """An entry set up before the sign-in, still on the app's SMS-login tokens."""
     entry = MockConfigEntry(
         domain=DOMAIN,
         title=PHONE,
@@ -190,33 +224,44 @@ def _entry(hass) -> MockConfigEntry:
     return entry
 
 
-async def test_reauth_texts_a_code_then_updates_tokens(hass):
+async def test_reauth_moves_an_sms_entry_to_the_sign_in(hass):
     entry = _entry(hass)
-
-    with patch(SEND, new=AsyncMock()) as send:
-        result = await entry.start_reauth_flow(hass)
+    result = await entry.start_reauth_flow(hass)
     assert result["step_id"] == "reauth_confirm"
-    send.assert_awaited_once()
 
-    with patch(CONFIRM, new=AsyncMock(return_value=("acc-new", "ref-new"))):
+    tokens = _tokens()
+    with patch(EXCHANGE, new=AsyncMock(return_value=tokens)):
         result = await hass.config_entries.flow.async_configure(
-            result["flow_id"], {"sms_code": "4321"}
+            result["flow_id"], {"callback_url": CALLBACK.format(state=_state(result))}
         )
         await hass.async_block_till_done()
 
     assert result["type"] == "abort"
     assert result["reason"] == "reauth_successful"
-    assert entry.data[CONF_AUTH_TOKEN] == "acc-new"
-    assert entry.data[CONF_REFRESH_TOKEN] == "ref-new"
+    assert entry.unique_id == PHONE
+    assert entry.data[CONF_AUTH_METHOD] == "sso"
+    assert entry.data[CONF_AUTH_TOKEN] == tokens[0]
+    assert entry.data[CONF_REFRESH_TOKEN] == "ref-1"
 
 
-async def test_reauth_wrong_code_surfaces_invalid_auth(hass):
+async def test_reauth_with_another_account_is_refused(hass):
     entry = _entry(hass)
-    with patch(SEND, new=AsyncMock()):
-        result = await entry.start_reauth_flow(hass)
-    with patch(CONFIRM, new=AsyncMock(side_effect=InPostApiError("HTTP 400"))):
+    result = await entry.start_reauth_flow(hass)
+    with patch(EXCHANGE, new=AsyncMock(return_value=_tokens(phone="700000000"))):
         result = await hass.config_entries.flow.async_configure(
-            result["flow_id"], {"sms_code": "0000"}
+            result["flow_id"], {"callback_url": CALLBACK.format(state=_state(result))}
+        )
+    assert result["type"] == "abort"
+    assert result["reason"] == "wrong_account"
+    assert entry.data[CONF_AUTH_TOKEN] == "old"
+
+
+async def test_reauth_rejected_code_surfaces_invalid_auth(hass):
+    entry = _entry(hass)
+    result = await entry.start_reauth_flow(hass)
+    with patch(EXCHANGE, new=AsyncMock(side_effect=InPostAuthReauthRequired("400"))):
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {"callback_url": CALLBACK.format(state=_state(result))}
         )
     assert result["errors"] == {"base": "invalid_auth"}
 

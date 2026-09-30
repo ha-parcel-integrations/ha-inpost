@@ -2,24 +2,28 @@
 
 Two responsibilities, kept apart:
 
-* the **login helpers** (:func:`async_send_sms_code`, :func:`async_confirm_sms_code`)
-  are module-level functions the config flow uses — no tokens yet, just a phone
-  number and the SMS code the user types back;
+* :func:`async_exchange_code` is the one sign-in call the config flow makes —
+  it turns the authorization code from the pasted callback URL into a token
+  pair (see :mod:`.oauth` for the URL side of that sign-in);
 * the :class:`InPostApiClient` holds the access/refresh token pair and fetches
   the parcel inbox, transparently refreshing the token on a 401.
+
+Two token kinds reach the same inbox. Entries set up through the InPost Group
+sign-in hold an OAuth pair, sent as ``Bearer`` and refreshed at the sign-in's
+token endpoint. Entries set up before that, with an SMS code, still hold the
+app's own pair, sent bare and refreshed at ``/v1/authenticate`` until their
+next reauth moves them over.
 
 Contract the rest of the integration relies on:
 
 * :meth:`InPostApiClient.async_get_parcels` returns the account's parcels as a
   list of raw dicts;
 * a refresh that fails raises :class:`InPostAuthReauthRequired`, which the
-  coordinator turns into ``ConfigEntryAuthFailed`` so HA re-prompts for SMS —
-  distinct from :class:`InPostApiError` (a transient outage that should retry);
+  coordinator turns into ``ConfigEntryAuthFailed`` so HA asks the user to
+  sign in again — distinct from :class:`InPostApiError` (a transient outage
+  that should retry);
 * ``aiohttp.ClientError`` propagates untouched where the coordinator can wrap it
   into ``UpdateFailed``.
-
-Auth, the token refresh lifecycle and the parcel-list endpoint are confirmed
-against real accounts — see CLAUDE.md.
 """
 from __future__ import annotations
 
@@ -30,26 +34,11 @@ from typing import Any
 
 import aiohttp
 
-# InPost's consumer mobile API — the one the Android app talks to. This is the
-# *account inbox* surface: log in once with a phone number and an SMS code, and
-# the account then lists every inbound parcel automatically. There is a second,
-# keyless per-tracking-number endpoint (``api-shipx-*``), but it returns one
-# parcel at a time and none of the locker data; the app API is the richer one.
-#
-# Auth is a three-step token dance, NOT a username/password login:
-#   1. POST /v1/sendSMSCode      {"phoneNumber": "<digits>"}          -> 200 = SMS sent
-#   2. POST /v1/confirmSMSCode   {"phoneNumber", "smsCode", "phoneOS"} -> {authToken, refreshToken}
-#   3. POST /v1/authenticate     {"refreshToken", "phoneOS"}          -> refreshed {authToken, refreshToken?}
-# The access token is sent as a **bare** ``Authorization: <authToken>`` header
-# (not ``Bearer <token>``), and a 401 means "refresh, then retry once". When the
-# refresh itself fails, the whole session is dead and HA must re-prompt for SMS.
-#
-# All shapes here are verified against the InPost Android app's traffic and a
-# working community integration — but not yet against an account we control. See
-# CLAUDE.md for the confidence caveat.
+from ..const import AUTH_METHOD_SMS, AUTH_METHOD_SSO
+from .oauth import OAUTH_CLIENT_ID, OAUTH_REDIRECT_URI, OAUTH_TOKEN_URL
+
 API_BASE = "https://api-inmobile-pl.easypack24.net"
-SEND_SMS_URL = f"{API_BASE}/v1/sendSMSCode"
-CONFIRM_SMS_URL = f"{API_BASE}/v1/confirmSMSCode"
+# Refreshes the app's own token pair, held by entries set up with an SMS code.
 AUTHENTICATE_URL = f"{API_BASE}/v1/authenticate"
 PARCELS_URL = f"{API_BASE}/v3/parcels/tracked"
 
@@ -99,7 +88,7 @@ def _retry_after(response: aiohttp.ClientResponse) -> float | None:
 
 
 class InPostAuthReauthRequired(InPostApiError):
-    """Raised when the session cannot be recovered and SMS login must repeat.
+    """Raised when the session cannot be recovered and the user must sign in again.
 
     Distinct from :class:`InPostApiError` on purpose: only this one may trigger
     Home Assistant's reauth flow. A plain outage must retry, never re-prompt.
@@ -107,7 +96,7 @@ class InPostAuthReauthRequired(InPostApiError):
 
 
 def _extract_tokens(payload: Any) -> tuple[str, str] | None:
-    """Pull ``(authToken, refreshToken)`` out of a token response, or ``None``."""
+    """Pull ``(authToken, refreshToken)`` out of an app token response, or ``None``."""
     if not isinstance(payload, dict):
         return None
     auth = payload.get("authToken")
@@ -117,44 +106,66 @@ def _extract_tokens(payload: Any) -> tuple[str, str] | None:
     return None
 
 
-async def async_send_sms_code(session: aiohttp.ClientSession, phone: str) -> None:
-    """Ask InPost to text an SMS login code to ``phone``.
+async def _async_post_oauth_token(
+    session: aiohttp.ClientSession, body: dict[str, str]
+) -> dict[str, Any]:
+    """POST to the sign-in's token endpoint and return a response with a token.
 
-    ``phone`` is the bare national number (digits only). Any 2xx means the code
-    was dispatched; anything else raises :class:`InPostApiError`.
+    A 400/401 is the identity provider refusing the code or refresh token
+    (``invalid_grant``) and raises :class:`InPostAuthReauthRequired`; anything
+    else unusable is a transient :class:`InPostApiError`.
     """
-    async with session.post(
-        SEND_SMS_URL,
-        json={"phoneNumber": phone},
-        headers=_BASE_HEADERS,
-        timeout=_TIMEOUT,
-    ) as response:
-        if response.status // 100 != 2:
-            raise InPostApiError(f"sendSMSCode HTTP {response.status}")
+    try:
+        async with session.post(
+            OAUTH_TOKEN_URL,
+            data=body,
+            headers={"Accept": "application/json"},
+            timeout=_TIMEOUT,
+        ) as response:
+            status = response.status
+            retry_after = _retry_after(response)
+            try:
+                payload = await response.json(content_type=None)
+            except (aiohttp.ContentTypeError, ValueError):
+                payload = None
+    except aiohttp.ClientError as err:
+        raise InPostApiError(f"token request transport error: {err}") from err
+
+    if status == 200 and isinstance(payload, dict) and payload.get("access_token"):
+        return payload
+    if status in (400, 401):
+        error = payload.get("error") if isinstance(payload, dict) else None
+        _LOGGER.warning(
+            "InPost sign-in rejected the token request: HTTP %s (%s)", status, error
+        )
+        raise InPostAuthReauthRequired(f"token request HTTP {status}", status_code=status)
+    raise InPostApiError(
+        f"token request HTTP {status}", status_code=status, retry_after=retry_after
+    )
 
 
-async def async_confirm_sms_code(
-    session: aiohttp.ClientSession, phone: str, code: str
+async def async_exchange_code(
+    session: aiohttp.ClientSession, code: str, code_verifier: str
 ) -> tuple[str, str]:
-    """Exchange the SMS code for an ``(auth_token, refresh_token)`` pair.
+    """Exchange the pasted authorization code for ``(access_token, refresh_token)``.
 
-    A rejected code comes back non-2xx and raises :class:`InPostApiError`; the
-    config flow surfaces that as ``invalid_auth``.
+    The code and verifier are single-use; the caller discards them whether
+    this succeeds or not.
     """
-    async with session.post(
-        CONFIRM_SMS_URL,
-        json={"phoneNumber": phone, "smsCode": code, "phoneOS": PHONE_OS},
-        headers=_BASE_HEADERS,
-        timeout=_TIMEOUT,
-    ) as response:
-        if response.status // 100 != 2:
-            raise InPostApiError(f"confirmSMSCode HTTP {response.status}")
-        payload = await response.json(content_type=None)
-
-    tokens = _extract_tokens(payload)
-    if tokens is None:
-        raise InPostApiError("confirmSMSCode response carried no tokens")
-    return tokens
+    payload = await _async_post_oauth_token(
+        session,
+        {
+            "grant_type": "authorization_code",
+            "client_id": OAUTH_CLIENT_ID,
+            "redirect_uri": OAUTH_REDIRECT_URI,
+            "code_verifier": code_verifier,
+            "code": code,
+        },
+    )
+    refresh = payload.get("refresh_token")
+    if not (isinstance(refresh, str) and refresh):
+        raise InPostApiError("sign-in response carried no refresh token")
+    return payload["access_token"], refresh
 
 
 class InPostApiClient:
@@ -172,12 +183,15 @@ class InPostApiClient:
         auth_token: str,
         refresh_token: str,
         on_tokens_updated: Callable[[str, str], None] | None = None,
+        *,
+        auth_method: str = AUTH_METHOD_SMS,
     ) -> None:
-        """Initialise with a session and the stored token pair."""
+        """Initialise with a session, the stored token pair and its kind."""
         self._session = session
         self._auth_token = auth_token
         self._refresh_token = refresh_token
         self._on_tokens_updated = on_tokens_updated
+        self._auth_method = auth_method
         # Serialise refreshes: two concurrent 401s must not both refresh and
         # invalidate each other's new token.
         self._refresh_lock = asyncio.Lock()
@@ -215,7 +229,13 @@ class InPostApiClient:
 
     async def _authed_get(self, url: str) -> tuple[int, Any, float | None]:
         """Perform one authenticated GET; return ``(status, parsed_body|None)``."""
-        headers = {**_BASE_HEADERS, "Authorization": self._auth_token}
+        # The app's own token is sent bare; the sign-in's token is a real Bearer.
+        authorization = (
+            f"Bearer {self._auth_token}"
+            if self._auth_method == AUTH_METHOD_SSO
+            else self._auth_token
+        )
+        headers = {**_BASE_HEADERS, "Authorization": authorization}
         async with self._session.get(
             url, headers=headers, timeout=_TIMEOUT
         ) as response:
@@ -233,55 +253,80 @@ class InPostApiClient:
         """
         async with self._refresh_lock:
             token_before = self._auth_token
-            try:
-                async with self._session.post(
-                    AUTHENTICATE_URL,
-                    json={"refreshToken": self._refresh_token, "phoneOS": PHONE_OS},
-                    headers=_BASE_HEADERS,
-                    timeout=_TIMEOUT,
-                ) as response:
-                    if response.status == 429:
-                        raise InPostApiError(
-                            "token refresh HTTP 429",
-                            status_code=429,
-                            retry_after=_retry_after(response),
-                        )
-                    if response.status != 200:
-                        # The coordinator collapses this into a generic
-                        # "session expired" — keep the real reason visible.
-                        body = await response.text()
-                        _LOGGER.warning(
-                            "Token refresh rejected: HTTP %s, body: %.300s",
-                            response.status,
-                            body,
-                        )
-                        raise InPostAuthReauthRequired(
-                            f"token refresh HTTP {response.status}"
-                        )
-                    payload = await response.json(content_type=None)
-            except aiohttp.ClientError as err:
-                # A transport failure during refresh is transient, not a dead
-                # session — let the coordinator retry rather than force reauth.
-                raise InPostApiError(f"token refresh transport error: {err}") from err
+            if self._auth_method == AUTH_METHOD_SSO:
+                tokens = await self._refresh_oauth()
+            else:
+                tokens = await self._refresh_app_token()
 
             if token_before != self._auth_token:
                 # Another coroutine refreshed while we waited for the lock.
                 return
 
-            tokens = _extract_tokens(payload)
-            if tokens is None:
-                # InPost may rotate only the access token: the authenticate
-                # response can carry authToken alone (observed live:
-                # ['authToken', 'pushIdStatus', 'reauthenticationRequired']).
-                # The stored refresh token is still valid — keep it.
-                auth = payload.get("authToken") if isinstance(payload, dict) else None
-                if not (isinstance(auth, str) and auth):
-                    raise InPostAuthReauthRequired("token refresh carried no tokens")
-                _LOGGER.debug(
-                    "Token refresh returned authToken only; keeping stored refreshToken"
-                )
-                tokens = (auth, self._refresh_token)
-
             self._auth_token, self._refresh_token = tokens
             if self._on_tokens_updated is not None:
                 self._on_tokens_updated(self._auth_token, self._refresh_token)
+
+    async def _refresh_oauth(self) -> tuple[str, str]:
+        """Refresh a sign-in token pair at the identity provider."""
+        payload = await _async_post_oauth_token(
+            self._session,
+            {
+                "grant_type": "refresh_token",
+                "client_id": OAUTH_CLIENT_ID,
+                "refresh_token": self._refresh_token,
+            },
+        )
+        # Seen live keeping the same refresh token; persist a new one if it
+        # does rotate, otherwise keep the stored one.
+        refresh = payload.get("refresh_token")
+        if not (isinstance(refresh, str) and refresh):
+            refresh = self._refresh_token
+        return payload["access_token"], refresh
+
+    async def _refresh_app_token(self) -> tuple[str, str]:
+        """Refresh the app's own token pair held by an SMS-era entry."""
+        try:
+            async with self._session.post(
+                AUTHENTICATE_URL,
+                json={"refreshToken": self._refresh_token, "phoneOS": PHONE_OS},
+                headers=_BASE_HEADERS,
+                timeout=_TIMEOUT,
+            ) as response:
+                if response.status == 429:
+                    raise InPostApiError(
+                        "token refresh HTTP 429",
+                        status_code=429,
+                        retry_after=_retry_after(response),
+                    )
+                if response.status != 200:
+                    # The coordinator collapses this into a generic
+                    # "session expired" — keep the real reason visible.
+                    body = await response.text()
+                    _LOGGER.warning(
+                        "Token refresh rejected: HTTP %s, body: %.300s",
+                        response.status,
+                        body,
+                    )
+                    raise InPostAuthReauthRequired(
+                        f"token refresh HTTP {response.status}"
+                    )
+                payload = await response.json(content_type=None)
+        except aiohttp.ClientError as err:
+            # A transport failure during refresh is transient, not a dead
+            # session — let the coordinator retry rather than force reauth.
+            raise InPostApiError(f"token refresh transport error: {err}") from err
+
+        tokens = _extract_tokens(payload)
+        if tokens is None:
+            # InPost may rotate only the access token: the authenticate
+            # response can carry authToken alone (observed live:
+            # ['authToken', 'pushIdStatus', 'reauthenticationRequired']).
+            # The stored refresh token is still valid — keep it.
+            auth = payload.get("authToken") if isinstance(payload, dict) else None
+            if not (isinstance(auth, str) and auth):
+                raise InPostAuthReauthRequired("token refresh carried no tokens")
+            _LOGGER.debug(
+                "Token refresh returned authToken only; keeping stored refreshToken"
+            )
+            tokens = (auth, self._refresh_token)
+        return tokens

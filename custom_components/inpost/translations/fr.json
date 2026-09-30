@@ -10,13 +10,13 @@
         }
       },
       "account": {
-        "title": "Configurer le compte InPost",
-        "description": "Connectez-vous comme dans l’application InPost : saisissez votre numéro de téléphone et InPost vous enverra un code par SMS.",
+        "title": "Se connecter à InPost",
+        "description": "Ouvrez ce lien dans un navigateur et connectez-vous avec votre compte InPost (numéro de téléphone et code SMS) :\n\n{authorize_url}\n\nEnsuite, la page ne finira pas de se charger : c'est normal. Copiez l'adresse complète depuis la barre d'adresse du navigateur et collez-la ci-dessous.",
         "data": {
-          "phone": "Numéro de téléphone"
+          "callback_url": "URL de retour"
         },
         "data_description": {
-          "phone": "Le numéro de mobile associé à votre compte InPost, par exemple 600123456."
+          "callback_url": "L'adresse qui commence par https://account.inpost-group.com/callback?code="
         }
       },
       "tracking": {
@@ -26,29 +26,24 @@
           "country": "Pays"
         }
       },
-      "sms": {
-        "title": "Saisir le code SMS",
-        "description": "InPost a envoyé un code de connexion à {phone}. Saisissez-le ci-dessous.",
-        "data": {
-          "sms_code": "Code SMS"
-        }
-      },
       "reauth_confirm": {
         "title": "Connexion InPost expirée",
-        "description": "InPost vous demande de vous reconnecter. Un nouveau code a été envoyé à {phone} — saisissez-le ci-dessous.",
+        "description": "InPost vous demande de vous reconnecter. Ouvrez ce lien dans un navigateur et connectez-vous avec le même compte :\n\n{authorize_url}\n\nCopiez ensuite l'adresse complète depuis la barre d'adresse du navigateur et collez-la ci-dessous.",
         "data": {
-          "sms_code": "Code SMS"
+          "callback_url": "URL de retour"
         }
       }
     },
     "error": {
-      "invalid_phone": "Ce numéro de téléphone ne semble pas valide.",
-      "invalid_auth": "Ce code n’a pas été accepté. Vérifiez-le et réessayez.",
-      "cannot_connect": "Impossible de joindre InPost. Veuillez réessayer."
+      "invalid_auth": "InPost a refusé la connexion. Ouvrez à nouveau le lien et reconnectez-vous.",
+      "cannot_connect": "Impossible de joindre InPost. Veuillez réessayer.",
+      "invalid_redirect": "Cela ne ressemble pas à l'adresse vers laquelle la page de connexion vous a renvoyé. Copiez l'adresse complète après vous être connecté.",
+      "market_not_supported": "Ce n'est pas un compte InPost polonais. Seuls les comptes polonais peuvent être importés ; ajoutez les colis d'autres pays comme codes de suivi."
     },
     "abort": {
       "already_configured": "Ce compte InPost est déjà configuré.",
-      "reauth_successful": "InPost a été réauthentifié."
+      "reauth_successful": "InPost a été réauthentifié.",
+      "wrong_account": "Cette connexion concerne un autre compte InPost. Connectez-vous avec le compte utilisé pour configurer cette entrée."
     }
   },
   "options": {

@@ -1,15 +1,14 @@
 """Config flow for the InPost parcel tracker integration.
 
-InPost has no password. You log in the way the mobile app does: give a phone
-number, InPost texts a one-time code, you type it back, and that exchange yields
-the token pair the integration stores. So both the initial setup and reauth are
-**two-step** — phone, then SMS code — which is the one genuinely new shape in
-this suite's config flows.
+InPost has no password. The account is signed in to on InPost's own sign-in
+page (phone number, SMS code, a captcha), which Home Assistant cannot host: the
+flow shows the sign-in link, the user completes it in their own browser and
+pastes back the callback URL it lands on, and that code is exchanged for the
+token pair the integration stores. Setup and reauth share the same step.
 """
 from __future__ import annotations
 
 import logging
-import re
 from collections.abc import Mapping
 from typing import Any
 
@@ -28,10 +27,22 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .account.client import (
     InPostApiError,
-    async_confirm_sms_code,
-    async_send_sms_code,
+    InPostAuthReauthRequired,
+    async_exchange_code,
+)
+from .account.oauth import (
+    SUPPORTED_MARKET,
+    build_authorization_url,
+    decode_token_claims,
+    generate_nonce,
+    generate_pkce,
+    generate_state,
+    is_valid_callback_url,
+    parse_callback_url,
 )
 from .const import (
+    AUTH_METHOD_SSO,
+    CONF_AUTH_METHOD,
     CONF_AUTH_TOKEN,
     CONF_COUNTRY,
     CONF_DELIVERED_FILTER_AMOUNT,
@@ -50,8 +61,7 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 
-_PHONE_SCHEMA = vol.Schema({vol.Required(CONF_PHONE): str})
-_CODE_SCHEMA = vol.Schema({vol.Required("sms_code"): str})
+_CALLBACK_SCHEMA = vol.Schema({vol.Required("callback_url"): str})
 _TRACKING_COUNTRY_SELECTOR = selector.SelectSelector(
     selector.SelectSelectorConfig(
         options=[country.lower() for country in TRACKING_COUNTRIES],
@@ -61,35 +71,18 @@ _TRACKING_COUNTRY_SELECTOR = selector.SelectSelector(
 )
 
 
-def normalize_phone(value: str) -> str:
-    """Return the bare 9-digit Polish national number.
-
-    Accepts whatever the user pastes — ``+48 600 123 456``, ``0048600123456``,
-    ``600-123-456`` — strips everything but digits, and drops a leading ``48``
-    country code so the value matches what InPost's API expects.
-    """
-    digits = re.sub(r"\D", "", value or "")
-    if digits.startswith("00"):
-        # International 00 prefix, e.g. 0048600123456.
-        digits = digits[2:]
-    if len(digits) == 11 and digits.startswith("48"):
-        digits = digits[2:]
-    return digits
-
-
-def valid_phone(value: str) -> bool:
-    """Whether ``value`` looks like a Polish mobile number (9 digits)."""
-    return bool(re.fullmatch(r"\d{9}", value))
-
-
 class InPostConfigFlow(ConfigFlow, domain=DOMAIN):
     """Handle the UI-driven configuration flow for the InPost integration."""
 
     VERSION = 1
 
     def __init__(self) -> None:
-        """Carry the phone number between the two SMS steps."""
-        self._phone: str = ""
+        """Initialise per-flow sign-in state — never persisted, never reused."""
+        self._authorize_url: str | None = None
+        self._code_verifier: str | None = None
+        self._state: str | None = None
+        self._phone: str | None = None
+        self._tokens: tuple[str, str] | None = None
 
     @staticmethod
     @callback
@@ -107,36 +100,89 @@ class InPostConfigFlow(ConfigFlow, domain=DOMAIN):
             step_id="user", menu_options=["account", "tracking"]
         )
 
+    def _ensure_authorize_url(self) -> None:
+        """Build the sign-in URL once per flow and keep it for the flow's lifetime.
+
+        Regenerating the verifier/state on a retry would invalidate a link the
+        user may already have opened.
+        """
+        if self._authorize_url is not None:
+            return
+        self._code_verifier, challenge = generate_pkce()
+        self._state = generate_state()
+        self._authorize_url = build_authorization_url(
+            challenge, self._state, generate_nonce(), self.hass.config.language
+        )
+
+    async def _async_sign_in(self, callback_url: str) -> str | None:
+        """Validate and exchange a pasted callback URL.
+
+        Returns a form error, or ``None`` with ``self._tokens`` and
+        ``self._phone`` set. Never logs the pasted value.
+        """
+        if not is_valid_callback_url(callback_url):
+            return "invalid_redirect"
+        code, state = parse_callback_url(callback_url)
+        if not code or state != self._state:
+            return "invalid_redirect"
+
+        try:
+            tokens = await async_exchange_code(
+                async_get_clientsession(self.hass), code, self._code_verifier or ""
+            )
+        except InPostAuthReauthRequired:
+            return "invalid_auth"
+        except (InPostApiError, aiohttp.ClientError, TimeoutError) as err:
+            _LOGGER.warning("InPost sign-in could not be completed: %s", err)
+            return "cannot_connect"
+
+        claims = decode_token_claims(tokens[0]) or {}
+        if claims.get("market") != SUPPORTED_MARKET:
+            return "market_not_supported"
+        phone = claims.get("phone")
+        if not (isinstance(phone, str) and phone.isdigit()):
+            return "invalid_auth"
+        self._phone = phone
+        self._tokens = tokens
+        return None
+
     async def async_step_account(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Step one: ask for the phone number and text an SMS code to it."""
+        """Show the sign-in link and take the pasted-back callback URL."""
+        self._ensure_authorize_url()
         errors: dict[str, str] = {}
 
         if user_input is not None:
-            phone = normalize_phone(user_input[CONF_PHONE])
-            if not valid_phone(phone):
-                errors["base"] = "invalid_phone"
+            error = await self._async_sign_in(user_input["callback_url"])
+            if error is not None:
+                errors["base"] = error
             else:
-                await self.async_set_unique_id(phone)
+                assert self._phone is not None and self._tokens is not None
+                # Same bare national number the SMS-era entries are keyed on,
+                # so an account set up both ways is caught as a duplicate.
+                await self.async_set_unique_id(self._phone)
                 self._abort_if_unique_id_configured()
-                try:
-                    await async_send_sms_code(
-                        async_get_clientsession(self.hass), phone
-                    )
-                except (InPostApiError, aiohttp.ClientError) as err:
-                    # The endpoint and request shape are confirmed working, so a
-                    # failure here is almost always transport (the HA host can't
-                    # reach InPost) or a transient HTTP error. Log the actual
-                    # cause so it is not hidden behind the generic form message.
-                    _LOGGER.warning("InPost could not send the SMS code: %s", err)
-                    errors["base"] = "cannot_connect"
-                else:
-                    self._phone = phone
-                    return await self.async_step_sms()
+                return self.async_create_entry(
+                    title=self._phone,
+                    data={
+                        CONF_PHONE: self._phone,
+                        CONF_AUTH_METHOD: AUTH_METHOD_SSO,
+                        CONF_AUTH_TOKEN: self._tokens[0],
+                        CONF_REFRESH_TOKEN: self._tokens[1],
+                    },
+                    options={
+                        CONF_DELIVERED_FILTER_TYPE: DEFAULT_DELIVERED_FILTER_TYPE,
+                        CONF_DELIVERED_FILTER_AMOUNT: DEFAULT_DELIVERED_FILTER_AMOUNT,
+                        CONF_INCLUDE_HISTORY: DEFAULT_INCLUDE_HISTORY,
+                    },
+                )
 
         return self.async_show_form(
-            step_id="account", data_schema=_PHONE_SCHEMA, errors=errors
+            step_id="account",
+            data_schema=_CALLBACK_SCHEMA,
+            errors=errors,
+            description_placeholders={"authorize_url": self._authorize_url or ""},
         )
 
     async def async_step_tracking(
@@ -164,95 +210,46 @@ class InPostConfigFlow(ConfigFlow, domain=DOMAIN):
             ),
         )
 
-    async def async_step_sms(
-        self, user_input: dict[str, Any] | None = None
-    ) -> ConfigFlowResult:
-        """Step two: exchange the typed SMS code for the token pair."""
-        errors: dict[str, str] = {}
-
-        if user_input is not None:
-            try:
-                auth_token, refresh_token = await async_confirm_sms_code(
-                    async_get_clientsession(self.hass),
-                    self._phone,
-                    user_input["sms_code"].strip(),
-                )
-            except (InPostApiError, aiohttp.ClientError) as err:
-                _LOGGER.warning("InPost could not confirm the SMS code: %s", err)
-                errors["base"] = "invalid_auth"
-            else:
-                return self.async_create_entry(
-                    title=self._phone,
-                    data={
-                        CONF_PHONE: self._phone,
-                        CONF_AUTH_TOKEN: auth_token,
-                        CONF_REFRESH_TOKEN: refresh_token,
-                    },
-                    options={
-                        CONF_DELIVERED_FILTER_TYPE: DEFAULT_DELIVERED_FILTER_TYPE,
-                        CONF_DELIVERED_FILTER_AMOUNT: DEFAULT_DELIVERED_FILTER_AMOUNT,
-                        CONF_INCLUDE_HISTORY: DEFAULT_INCLUDE_HISTORY,
-                    },
-                )
-
-        return self.async_show_form(
-            step_id="sms",
-            data_schema=_CODE_SCHEMA,
-            errors=errors,
-            description_placeholders={"phone": self._phone},
-        )
-
     async def async_step_reauth(
         self, entry_data: Mapping[str, Any]
     ) -> ConfigFlowResult:
-        """Start reauth: the token pair expired, so log in by SMS again."""
-        self._phone = entry_data[CONF_PHONE]
+        """Start reauth: the stored token pair can no longer be refreshed."""
         return await self.async_step_reauth_confirm()
 
     async def async_step_reauth_confirm(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Re-send an SMS to the stored number, then confirm the code.
+        """Repeat the sign-in and update the entry in place.
 
-        The phone is fixed to the entry's, so reauth cannot silently rebind the
-        entry to a different account.
+        An entry still on the app's SMS-login tokens moves to the sign-in here.
         """
+        self._ensure_authorize_url()
         errors: dict[str, str] = {}
 
-        if user_input is None:
-            # First entry into the step: text a fresh code before showing the
-            # code field.
-            try:
-                await async_send_sms_code(
-                    async_get_clientsession(self.hass), self._phone
-                )
-            except (InPostApiError, aiohttp.ClientError) as err:
-                _LOGGER.warning("InPost could not send the SMS code: %s", err)
-                errors["base"] = "cannot_connect"
-        else:
-            try:
-                auth_token, refresh_token = await async_confirm_sms_code(
-                    async_get_clientsession(self.hass),
-                    self._phone,
-                    user_input["sms_code"].strip(),
-                )
-            except (InPostApiError, aiohttp.ClientError) as err:
-                _LOGGER.warning("InPost could not confirm the SMS code: %s", err)
-                errors["base"] = "invalid_auth"
+        if user_input is not None:
+            error = await self._async_sign_in(user_input["callback_url"])
+            if error is not None:
+                errors["base"] = error
             else:
+                assert self._phone is not None and self._tokens is not None
+                # Signing in to a *different* account must not silently
+                # rebind this entry to it.
+                await self.async_set_unique_id(self._phone)
+                self._abort_if_unique_id_mismatch(reason="wrong_account")
                 return self.async_update_reload_and_abort(
                     self._get_reauth_entry(),
                     data_updates={
-                        CONF_AUTH_TOKEN: auth_token,
-                        CONF_REFRESH_TOKEN: refresh_token,
+                        CONF_AUTH_METHOD: AUTH_METHOD_SSO,
+                        CONF_AUTH_TOKEN: self._tokens[0],
+                        CONF_REFRESH_TOKEN: self._tokens[1],
                     },
                 )
 
         return self.async_show_form(
             step_id="reauth_confirm",
-            data_schema=_CODE_SCHEMA,
+            data_schema=_CALLBACK_SCHEMA,
             errors=errors,
-            description_placeholders={"phone": self._phone},
+            description_placeholders={"authorize_url": self._authorize_url or ""},
         )
 
 

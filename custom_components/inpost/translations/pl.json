@@ -10,13 +10,13 @@
         }
       },
       "account": {
-        "title": "Konfiguracja konta InPost",
-        "description": "Zaloguj się tak jak w aplikacji InPost: podaj numer telefonu, a InPost wyśle Ci kod logowania SMS-em.",
+        "title": "Zaloguj się do InPost",
+        "description": "Otwórz ten link w przeglądarce i zaloguj się na swoje konto InPost (numer telefonu i kod SMS):\n\n{authorize_url}\n\nPotem strona nie załaduje się do końca — tak ma być. Skopiuj pełny adres z paska adresu przeglądarki i wklej go poniżej.",
         "data": {
-          "phone": "Numer telefonu"
+          "callback_url": "Adres zwrotny (callback URL)"
         },
         "data_description": {
-          "phone": "Numer telefonu powiązany z Twoim kontem InPost, np. 600123456."
+          "callback_url": "Adres zaczynający się od https://account.inpost-group.com/callback?code="
         }
       },
       "tracking": {
@@ -26,29 +26,24 @@
           "country": "Kraj"
         }
       },
-      "sms": {
-        "title": "Wpisz kod SMS",
-        "description": "InPost wysłał kod logowania na numer {phone}. Wpisz go poniżej.",
-        "data": {
-          "sms_code": "Kod SMS"
-        }
-      },
       "reauth_confirm": {
-        "title": "Sesja InPost wygasła",
-        "description": "InPost wymaga ponownego logowania. Nowy kod został wysłany na numer {phone} — wpisz go poniżej.",
+        "title": "Logowanie do InPost wygasło",
+        "description": "InPost wymaga ponownego zalogowania. Otwórz ten link w przeglądarce i zaloguj się na to samo konto:\n\n{authorize_url}\n\nNastępnie skopiuj pełny adres z paska adresu przeglądarki i wklej go poniżej.",
         "data": {
-          "sms_code": "Kod SMS"
+          "callback_url": "Adres zwrotny (callback URL)"
         }
       }
     },
     "error": {
-      "invalid_phone": "To nie wygląda na prawidłowy numer telefonu.",
-      "invalid_auth": "Kod nie został zaakceptowany. Sprawdź go i spróbuj ponownie.",
-      "cannot_connect": "Nie można połączyć się z InPost. Spróbuj ponownie."
+      "invalid_auth": "InPost odrzucił logowanie. Otwórz link ponownie i zaloguj się jeszcze raz.",
+      "cannot_connect": "Nie można połączyć się z InPost. Spróbuj ponownie.",
+      "invalid_redirect": "To nie wygląda na adres, na który przekierowała Cię strona logowania. Po zalogowaniu skopiuj cały adres.",
+      "market_not_supported": "To nie jest polskie konto InPost. Importować można tylko polskie konta; paczki z innych krajów dodaj jako numery śledzenia."
     },
     "abort": {
       "already_configured": "To konto InPost jest już skonfigurowane.",
-      "reauth_successful": "Ponowne uwierzytelnienie InPost powiodło się."
+      "reauth_successful": "Ponowne uwierzytelnienie InPost powiodło się.",
+      "wrong_account": "To logowanie dotyczy innego konta InPost. Zaloguj się na konto, dla którego skonfigurowano ten wpis."
     }
   },
   "options": {

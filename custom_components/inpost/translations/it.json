@@ -10,13 +10,13 @@
         }
       },
       "account": {
-        "title": "Configura account InPost",
-        "description": "Accedi come nell'app InPost: inserisci il tuo numero di telefono e InPost ti invierà un codice via SMS.",
+        "title": "Accedi a InPost",
+        "description": "Apri questo link in un browser e accedi con il tuo account InPost (numero di telefono e codice SMS):\n\n{authorize_url}\n\nDopo l'accesso la pagina non finirà di caricarsi: è normale. Copia l'indirizzo completo dalla barra degli indirizzi del browser e incollalo qui sotto.",
         "data": {
-          "phone": "Numero di telefono"
+          "callback_url": "URL di callback"
         },
         "data_description": {
-          "phone": "Il numero di cellulare registrato nel tuo account InPost, ad esempio 600123456."
+          "callback_url": "L'indirizzo che inizia con https://account.inpost-group.com/callback?code="
         }
       },
       "tracking": {
@@ -26,29 +26,24 @@
           "country": "Paese"
         }
       },
-      "sms": {
-        "title": "Inserisci il codice SMS",
-        "description": "InPost ha inviato un codice di accesso a {phone}. Inseriscilo qui sotto.",
-        "data": {
-          "sms_code": "Codice SMS"
-        }
-      },
       "reauth_confirm": {
-        "title": "Accesso InPost scaduto",
-        "description": "InPost richiede di accedere di nuovo. Un nuovo codice è stato inviato a {phone}: inseriscilo qui sotto.",
+        "title": "Accesso a InPost scaduto",
+        "description": "InPost richiede un nuovo accesso. Apri questo link in un browser e accedi con lo stesso account:\n\n{authorize_url}\n\nPoi copia l'indirizzo completo dalla barra degli indirizzi del browser e incollalo qui sotto.",
         "data": {
-          "sms_code": "Codice SMS"
+          "callback_url": "URL di callback"
         }
       }
     },
     "error": {
-      "invalid_phone": "Non sembra un numero di telefono valido.",
-      "invalid_auth": "Il codice non è stato accettato. Controllalo e riprova.",
-      "cannot_connect": "Impossibile raggiungere InPost. Riprova."
+      "invalid_auth": "InPost ha rifiutato l'accesso. Apri di nuovo il link e accedi un'altra volta.",
+      "cannot_connect": "Impossibile raggiungere InPost. Riprova.",
+      "invalid_redirect": "Questo non sembra l'indirizzo a cui ti ha rimandato la pagina di accesso. Dopo l'accesso copia l'indirizzo completo.",
+      "market_not_supported": "Questo non è un account InPost polacco. Si possono importare solo account polacchi; aggiungi le spedizioni di altri paesi come codici di tracciamento."
     },
     "abort": {
       "already_configured": "Questo account InPost è già configurato.",
-      "reauth_successful": "InPost è stato riautenticato correttamente."
+      "reauth_successful": "InPost è stato riautenticato correttamente.",
+      "wrong_account": "Questo accesso riguarda un altro account InPost. Accedi con l'account con cui è stata configurata questa voce."
     }
   },
   "options": {
