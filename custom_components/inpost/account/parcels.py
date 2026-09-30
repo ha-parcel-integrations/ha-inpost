@@ -199,6 +199,13 @@ STATUS_GROUP_MAP: dict[str, str] = {
     "delivered": ParcelStatus.DELIVERED,
 }
 
+# Payment events, not steps in the parcel's journey: a cash-on-delivery parcel
+# can be paid for while it is still moving or already waiting in the locker.
+# They say nothing about where the parcel is, so the parcel keeps the bucket
+# its ``statusGroup`` gives it and a history entry keeps ``status: None``,
+# without the unmapped-status warning.
+PAYMENT_STATUSES = frozenset({"cod_completed", "c2x_completed"})
+
 
 def _note_payload_shape(raw: dict) -> None:
     """One-shot: report unconfirmed top-level fields so a tester can map them."""
@@ -241,14 +248,15 @@ def map_parcel_status(status: str | None, status_group: str | None) -> ParcelSta
     detailed map gets completed. Both empty → ``unknown``, silently (a parcel
     with no status yet is a normal, transient state).
     """
-    detailed = STATUS_MAP.get(status.strip().lower()) if status else None
+    key = status.strip().lower() if status else None
+    detailed = STATUS_MAP.get(key) if key else None
     if detailed is not None:
         return detailed
 
     grouped = (
         STATUS_GROUP_MAP.get(status_group.strip().lower()) if status_group else None
     )
-    if status:
+    if status and key not in PAYMENT_STATUSES:
         # Report the unmapped detailed value even when the group saved the day.
         _warn_unmapped_status(status)
     return grouped if grouped is not None else ParcelStatus.UNKNOWN
@@ -314,8 +322,9 @@ def build_history(
         if not timestamp:
             continue
         name = event.get("name")
-        status = STATUS_MAP.get(name.strip().lower()) if name else None
-        if name and status is None:
+        key = name.strip().lower() if name else None
+        status = STATUS_MAP.get(key) if key else None
+        if name and status is None and key not in PAYMENT_STATUSES:
             _warn_unmapped_status(name)
         entry = {
             "timestamp": timestamp,

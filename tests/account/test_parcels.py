@@ -376,3 +376,19 @@ def test_pickup_point_non_dict_is_none():
     raw = ready_sample()
     raw["pickUpPoint"] = "KRA010"  # unexpected shape
     assert normalize_parcel(raw)["pickup_point"] is None
+
+
+@pytest.mark.parametrize("code", ["COD_COMPLETED", "c2x_completed"])
+def test_payment_status_keeps_the_group_bucket_silently(code, caplog):
+    assert map_parcel_status(code, "TO_PICKUP") is ParcelStatus.AT_PICKUP_POINT
+    assert map_parcel_status(code, "IN_DELIVERY") is ParcelStatus.IN_TRANSIT
+    assert map_parcel_status(code, None) is ParcelStatus.UNKNOWN
+    assert code not in caplog.text
+
+
+def test_payment_event_in_history_has_no_status_and_no_warning(caplog):
+    events = [{"name": "COD_COMPLETED", "date": "2026-04-30T18:22:00+02:00"}]
+    entry = build_history(events)[0]
+    assert entry["status"] is None
+    assert entry["raw_status"] == "COD_COMPLETED"
+    assert "COD_COMPLETED" not in caplog.text
