@@ -23,7 +23,7 @@
           "callback_url": "Callback URL"
         },
         "data_description": {
-          "callback_url": "The address starting with https://account.inpost-group.com/callback?code="
+          "callback_url": "The full address from your browser's address bar after signing in. It contains \"callback?code=\"."
         }
       },
       "tracking": {

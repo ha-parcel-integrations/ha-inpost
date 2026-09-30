@@ -23,7 +23,7 @@
           "callback_url": "Adres zwrotny (callback URL)"
         },
         "data_description": {
-          "callback_url": "Adres zaczynający się od https://account.inpost-group.com/callback?code="
+          "callback_url": "Pełny adres z paska adresu przeglądarki po zalogowaniu. Zawiera \"callback?code=\"."
         }
       },
       "tracking": {

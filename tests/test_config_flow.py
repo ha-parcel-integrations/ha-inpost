@@ -356,3 +356,13 @@ async def test_country_dropdowns_sort_by_translated_name(hass):
             flow["flow_id"], {"next_step_id": step}
         )
         assert form["data_schema"].schema[CONF_COUNTRY].config["sort"] is True, step
+
+
+def test_translations_contain_no_urls():
+    """Hassfest rejects a URL in any string; links go through placeholders."""
+    translations_dir = Path(__file__).parents[1] / "custom_components/inpost"
+    paths = [translations_dir / "strings.json"] + sorted(
+        (translations_dir / "translations").glob("*.json")
+    )
+    for path in paths:
+        assert "://" not in path.read_text(), path
