@@ -120,17 +120,28 @@ preserved. The account hub **never stops**
 nothing to trigger a refresh); a tracking hub suspends entirely with no tracked
 codes (`stop_when_empty=True`).
 
-*Module layout* — two independent backends:
+*Module layout: two sources, two subpackages.* This follows the suite's
+multi-source convention (the same shape as `ha-bpost` and `ha-dhl`). Each source
+owns its client, coordinator, normaliser and status map under
+`custom_components/inpost/<source>/`:
 
-| File | Carrier-specific? |
+| Module | Holds |
 |---|---|
-| `api.py` (SMS auth, token refresh, parcel list, plus `InPostTrackingApiClient` for the keyless per-country endpoint) | **yes** |
-| `const.py` (`TRACKING_URL_BY_COUNTRY`, `CAPABILITIES_BY_VARIANT`, `STATUS_MAP` + `TRACKING_STATUS_MAP`) | partly |
-| `parcels.py` (`normalize_parcel` for the account inbox, `normalize_tracking_parcel` for public tracking — two independent pure functions) | partly |
-| `coordinator.py` (`InPostCoordinator` + `InPostTrackingCoordinator(InPostCoordinator)`) | mostly not |
-| `config_flow.py` (menu picks account vs tracking) | partly |
-| `services.py` | **yes** — tracking hubs only |
-| `diagnostics.py` | partly (`TO_REDACT` incl. `qrCode`/`openCode`) |
+| `account/client.py` | SMS login helpers, `InPostApiClient` (token refresh, parcel list), `InPostApiError`/`InPostAuthReauthRequired`, the legacy-host URLs |
+| `account/coordinator.py` | `InPostCoordinator` and the dynamic-polling helpers both sources use |
+| `account/parcels.py` | `normalize_parcel`, `STATUS_MAP` + `STATUS_GROUP_MAP`, and the suite-wide helpers (`parse_iso`, sort, delivered filter, `NEW_ISSUE_URL`) |
+| `tracking/client.py` | `InPostTrackingApiClient`, `EASY_TRACKING_URL` |
+| `tracking/coordinator.py` | `InPostTrackingCoordinator(InPostCoordinator)` |
+| `tracking/parcels.py` | `normalize_tracking_parcel`, `TRACKING_STATUS_MAP`, `TRACKING_URL_BY_COUNTRY` |
+| `const.py` | Shared keys and defaults, and **`CAPABILITIES_BY_VARIANT`, which must stay here**: the docs site reads it from this file |
+| `config_flow.py`, `services.py` (tracking hubs only), `diagnostics.py` (`TO_REDACT` incl. `qrCode`/`openCode`), platforms | Root. They are shared across sources |
+
+`tracking/` imports shared pieces from `account/`, one way only. `api.py`,
+`coordinator.py` and `parcels.py` at the root are **re-export shims** for the
+pre-split import paths. Nothing in the repo imports through them;
+`tests/test_compat_imports.py` guards them. Tests mirror the split
+(`tests/account/`, `tests/tracking/`). The source-agnostic platform tests,
+`test_polling.py`, the config flow and the shared `payloads.py` stay top-level.
 
 `__init__.py` branches once, on `CONF_COUNTRY in entry.data`, to pick the
 account vs tracking wiring.

@@ -20,12 +20,13 @@ def reset_one_shot_warnings():
     makes them leak across tests, so whether a warning fires would otherwise
     depend on test order.
     """
-    from custom_components.inpost import parcels
+    from custom_components.inpost.account import parcels
+    from custom_components.inpost.tracking import parcels as tracking_parcels
 
     parcels._unmapped_statuses_logged.clear()
     parcels._payload_shape_logged = False
-    parcels._unmapped_tracking_statuses_logged.clear()
-    parcels._tracking_payload_shape_logged = False
+    tracking_parcels._unmapped_tracking_statuses_logged.clear()
+    tracking_parcels._tracking_payload_shape_logged = False
     yield
 
 

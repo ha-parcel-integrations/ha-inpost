@@ -18,10 +18,10 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import InPostConfigEntry
+from .account.coordinator import InPostCoordinator
+from .account.parcels import parse_iso
 from .const import DOMAIN, ParcelStatus
-from .coordinator import InPostCoordinator
 from .device import ATTRIBUTION, build_device_info
-from .parcels import parse_iso
 
 _LOGGER = logging.getLogger(__name__)
 

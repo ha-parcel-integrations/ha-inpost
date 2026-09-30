@@ -1,18 +1,18 @@
 """Tests for InPost's unconditional dynamic polling policy."""
 from datetime import datetime, timedelta, timezone
 
-from custom_components.inpost.const import (
-    HOT_INTERVAL_MINUTES,
-    MID_INTERVAL_MINUTES,
-    STAGGER_MINUTES,
-    ParcelStatus,
-)
-from custom_components.inpost.coordinator import (
+from custom_components.inpost.account.coordinator import (
     _hottest_tier_minutes,
     _in_quiet_window,
     _next_anchor,
     _next_update_interval,
     _stagger_minutes,
+)
+from custom_components.inpost.const import (
+    HOT_INTERVAL_MINUTES,
+    MID_INTERVAL_MINUTES,
+    STAGGER_MINUTES,
+    ParcelStatus,
 )
 
 UTC = timezone.utc

@@ -5,7 +5,10 @@ from homeassistant.config_entries import ConfigEntryState
 from homeassistant.helpers import entity_registry as er
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.inpost.api import InPostApiError, InPostAuthReauthRequired
+from custom_components.inpost.account.client import (
+    InPostApiError,
+    InPostAuthReauthRequired,
+)
 from custom_components.inpost.const import (
     CONF_AUTH_TOKEN,
     CONF_PHONE,
@@ -16,7 +19,7 @@ from custom_components.inpost.const import (
 from .payloads import ACTIVE_CODE, in_transit_sample, ready_sample
 
 PHONE = "600123456"
-GET = "custom_components.inpost.api.InPostApiClient.async_get_parcels"
+GET = "custom_components.inpost.account.client.InPostApiClient.async_get_parcels"
 
 
 def _entry() -> MockConfigEntry:

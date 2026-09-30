@@ -8,10 +8,12 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
-from .api import InPostApiClient, InPostTrackingApiClient
+from .account.client import InPostApiClient
+from .account.coordinator import InPostCoordinator
 from .const import CONF_AUTH_TOKEN, CONF_COUNTRY, CONF_REFRESH_TOKEN, PLATFORMS
-from .coordinator import InPostCoordinator, InPostTrackingCoordinator
 from .services import async_setup_services, async_unload_services
+from .tracking.client import InPostTrackingApiClient
+from .tracking.coordinator import InPostTrackingCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 

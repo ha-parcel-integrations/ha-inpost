@@ -1,8 +1,8 @@
 """Tests for InPost diagnostics redaction."""
 from unittest.mock import MagicMock
 
+from custom_components.inpost.account.parcels import normalize_parcel
 from custom_components.inpost.diagnostics import async_get_config_entry_diagnostics
-from custom_components.inpost.parcels import normalize_parcel
 
 from .payloads import ready_sample
 

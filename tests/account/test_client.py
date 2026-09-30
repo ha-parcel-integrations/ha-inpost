@@ -1,49 +1,19 @@
-"""Tests for the InPost API client — SMS login helpers and token refresh."""
+"""Tests for the InPost account client — SMS login helpers and token refresh."""
 from unittest.mock import AsyncMock, MagicMock
 
 import aiohttp
 import pytest
 
-from custom_components.inpost.api import (
+from custom_components.inpost.account.client import (
     InPostApiClient,
     InPostApiError,
     InPostAuthReauthRequired,
-    InPostTrackingApiClient,
     async_confirm_sms_code,
     async_send_sms_code,
 )
 
-from .payloads import ACTIVE_CODE, ready_sample, response
-
-
-def _session(*responses) -> MagicMock:
-    """A session whose get/post return the queued ``(status, body)`` responses.
-
-    Each queued item is used for one call, in order; a single item is reused for
-    every call.
-    """
-    queue = list(responses)
-
-    def _make(item):
-        status, body = item
-        resp = AsyncMock()
-        resp.status = status
-        resp.json = AsyncMock(return_value=body)
-        resp.headers = {}
-        ctx = MagicMock()
-        ctx.__aenter__ = AsyncMock(return_value=resp)
-        ctx.__aexit__ = AsyncMock(return_value=False)
-        return ctx
-
-    def _next(*args, **kwargs):
-        item = queue.pop(0) if len(queue) > 1 else queue[0]
-        return _make(item)
-
-    session = MagicMock()
-    session.get = MagicMock(side_effect=_next)
-    session.post = MagicMock(side_effect=_next)
-    return session
-
+from ..payloads import ACTIVE_CODE, ready_sample, response
+from ..sessions import fake_session as _session
 
 # ---------------------------------------------------------------------------
 # SMS login helpers
@@ -192,17 +162,3 @@ async def test_non_401_error_status_raises_api_error():
     session = _session((503, None))
     with pytest.raises(InPostApiError):
         await InPostApiClient(session, "acc", "ref").async_get_parcels()
-
-
-async def test_public_tracking_client_requests_keyless_endpoint():
-    session = _session((200, {"trackingNumber": "TEST-1", "status": "new"}))
-    parcel = await InPostTrackingApiClient(session).async_get_parcel("TEST-1")
-    assert parcel["trackingNumber"] == "TEST-1"
-    assert session.get.call_args.kwargs["params"] == {"language": "en"}
-
-
-async def test_public_tracking_semantic_500_is_retryable_api_error():
-    session = _session((200, {"status": 500}))
-    with pytest.raises(InPostApiError) as err:
-        await InPostTrackingApiClient(session).async_get_parcel("TEST-1")
-    assert err.value.status_code == 500

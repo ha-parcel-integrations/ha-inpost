@@ -7,7 +7,7 @@ import aiohttp
 from homeassistant.config_entries import SOURCE_USER
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.inpost.api import InPostApiError
+from custom_components.inpost.account.client import InPostApiError
 from custom_components.inpost.config_flow import normalize_phone, valid_phone
 from custom_components.inpost.const import (
     CONF_AUTH_TOKEN,

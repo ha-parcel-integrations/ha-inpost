@@ -11,9 +11,9 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
 
 from . import InPostConfigEntry
-from .coordinator import InPostCoordinator
+from .account.coordinator import InPostCoordinator
+from .account.parcels import parse_iso
 from .device import ATTRIBUTION, build_device_info
-from .parcels import parse_iso
 
 PARALLEL_UPDATES = 0
 

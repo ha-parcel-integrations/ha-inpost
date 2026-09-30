@@ -26,7 +26,7 @@ from homeassistant.data_entry_flow import section
 from homeassistant.helpers import selector
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
-from .api import (
+from .account.client import (
     InPostApiError,
     async_confirm_sms_code,
     async_send_sms_code,
