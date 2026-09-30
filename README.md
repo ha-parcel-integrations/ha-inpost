@@ -16,7 +16,7 @@
 > so far. An unrecognised one still lands in a sensible bucket rather than
 > breaking — see [How you can help](#how-you-can-help) if you spot one.
 
-A custom Home Assistant integration that tracks your [InPost](https://inpost.pl) parcels. Choose either the Polish app account (sign in on InPost's own page, parcels imported automatically) or a public tracking-number hub for Poland, Italy, Portugal or the United Kingdom.
+A custom Home Assistant integration that tracks your [InPost](https://inpost.pl) parcels. Choose either your InPost account in Poland or Italy (sign in on InPost's own page, parcels imported automatically) or a public tracking-number hub for Poland, Italy, Portugal, the United Kingdom or Spain.
 
 What makes InPost worth its own integration is the **locker**: a parcel waiting for you reports `at_pickup_point`, and its Paczkomat's name comes along with it — so "notify me when a parcel is ready to collect" is a one-line automation.
 
@@ -54,7 +54,7 @@ Part of the [ha-parcel-integrations](https://ha-parcel-integrations.github.io/) 
 
 ## Requirements
 
-- A **Polish InPost account** (the InPost Mobile app), reachable by SMS on its phone number — for the account path only
+- An **InPost account in Poland or Italy** (the InPost Mobile app), reachable by SMS on its phone number — for the account path only
 - A browser to sign in with once; it does not have to run on the Home Assistant machine
 
 ## Installation
@@ -73,18 +73,21 @@ Copy `custom_components/inpost` into your `config/custom_components/` folder and
 
 Add the integration via **Settings → Devices & Services → Add Integration → InPost**, then choose one of these paths:
 
-- **Account (Poland, auto-import):** sign in on InPost's own page and paste back the address it lands on.
+- **Account (auto-import):** choose the country your account is registered in (Poland or Italy), then sign in on InPost's own page and paste back the address it lands on.
 - **Tracking codes:** select the delivery market (PL, IT, PT, GB or ES), then add tracking codes through **Configure** or the services below. Create another hub for a different market when needed.
 
 For the account path:
 
-1. The setup form shows a **sign-in link**. Open it in any browser.
-2. Sign in with the **phone number** registered with your InPost account and the SMS code InPost texts you.
-3. The page then stops loading on an address starting with `https://account.inpost-group.com/callback?code=`. That is expected. Copy the **whole address** from the address bar and paste it into the form.
+1. Choose the **country** your InPost account is registered in.
+2. The next form shows a **sign-in link**. Open it in any browser.
+3. Sign in with the **phone number** registered with your InPost account and the SMS code InPost texts you.
+4. The page then stops loading on an address starting with `https://account.inpost-group.com/callback?code=`. That is expected. Copy the **whole address** from the address bar and paste it into the form.
 
 That is it — your parcels appear on the next refresh. InPost's sign-in page needs a captcha, which is why the sign-in happens in your browser rather than inside Home Assistant. If the session ever expires, Home Assistant asks you to sign in again the same way; nothing else changes.
 
-You can add more than one account (each is a separate phone number). Only Polish accounts can be imported; for parcels in other countries, use a tracking-code hub.
+You can add more than one account (each is a separate phone number), also one per country. For parcels in Portugal, the United Kingdom or Spain, use a tracking-code hub.
+
+**Italian accounts are new.** Signing in and reading the parcel list are confirmed with a real Italian account, but no Italian parcel has been seen yet, so the parcel details are modelled on the InPost app. If the log says an Italian parcel "differs from the shape we modelled", please [share a diagnostics file](#how-you-can-help). Italian parcels show their status, sender, pickup point and history; weight and dimensions follow once a real parcel shows their units.
 
 **Already set up with an SMS code before this version?** Nothing changes for you: your setup keeps working as it is. The next time InPost asks you to sign in again, you use the new sign-in page, and your sensors and automations stay as they are.
 
@@ -205,6 +208,7 @@ Unrecognised InPost status — help us map it. Open an issue and paste this line
 - **A parcel shows `unknown`** — its status is one we do not map yet; see [How you can help](#how-you-can-help).
 - **Home Assistant asks me to sign in again** — InPost sessions expire; open the new sign-in link, sign in and paste the address back, and everything resumes. This is normal, not a fault.
 - **The address bar never shows `…/callback?code=`** — some browsers move on from that page straight away. Open the browser's developer tools (F12) on the **Network** tab with *Preserve log* on, sign in again with the same link, and copy the URL of the `callback` request.
+- **"That sign-in was for an InPost account in a different country"** — your browser was probably still signed in to another InPost account and skipped the sign-in. Open the link in a private window and sign in with the right account.
 - **"That sign-in was for a different InPost account"** during a reauth — sign in with the phone number this entry was set up with, or remove the entry and add the other account separately.
 
 ## Related integrations

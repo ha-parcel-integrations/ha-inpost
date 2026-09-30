@@ -24,8 +24,8 @@ def test_pkce_challenge_is_the_s256_of_the_verifier():
     assert generate_pkce()[0] != verifier
 
 
-def test_authorization_url_carries_the_app_client_and_polish_market():
-    url = build_authorization_url("chal", "st", "no", "en")
+def test_authorization_url_carries_the_app_client_and_chosen_market():
+    url = build_authorization_url("chal", "st", "no", "en", "PL")
     assert url.startswith(f"{OAUTH_AUTHORIZE_URL}?")
     params = {k: v[0] for k, v in parse_qs(urlparse(url).query).items()}
     assert params == {
@@ -44,11 +44,20 @@ def test_authorization_url_carries_the_app_client_and_polish_market():
 
 
 @pytest.mark.parametrize(
-    ("language", "expected"), [("pl", "pl-PL"), ("pl-PL", "pl-PL"), ("nl", "en"), (None, "en")]
+    ("language", "market", "expected"),
+    [
+        ("pl", "PL", "pl-PL"),
+        ("pl-PL", "PL", "pl-PL"),
+        ("it", "IT", "it-IT"),
+        ("it", "PL", "en"),
+        ("nl", "IT", "en"),
+        (None, "PL", "en"),
+    ],
 )
-def test_authorization_url_language(language, expected):
-    url = build_authorization_url("c", "s", "n", language)
-    assert parse_qs(urlparse(url).query)["lang"] == [expected]
+def test_authorization_url_language(language, market, expected):
+    query = parse_qs(urlparse(build_authorization_url("c", "s", "n", language, market)).query)
+    assert query["lang"] == [expected]
+    assert query["supported_markets"] == [market]
 
 
 @pytest.mark.parametrize(

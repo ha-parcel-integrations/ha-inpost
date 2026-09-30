@@ -254,3 +254,30 @@ async def test_sign_in_refresh_rate_limited_is_transient_with_retry_after():
         await _sso_client(session).async_get_parcels()
     assert not isinstance(err.value, InPostAuthReauthRequired)
     assert err.value.retry_after == 90
+
+
+# ---------------------------------------------------------------------------
+# Italian account inbox
+# ---------------------------------------------------------------------------
+
+
+async def test_italian_inbox_follows_the_cursor_pages():
+    session = _session(
+        (200, {"parcels": [{"primaryParcelNumber": "A"}], "nextPage": {"pagingState": "p2"}}),
+        (200, {"parcels": [{"primaryParcelNumber": "B"}, "junk"], "nextPage": None}),
+    )
+    client = _sso_client(session, market="IT")
+    parcels = await client.async_get_parcels()
+    assert [p["primaryParcelNumber"] for p in parcels] == ["A", "B"]
+    first, second = session.get.call_args_list
+    assert first.args[0].endswith("/global/cps/api/v1/parcels")
+    assert first.kwargs["params"] == {"role": "RECEIVER"}
+    assert second.kwargs["params"] == {"role": "RECEIVER", "pagingState": "p2"}
+
+
+async def test_italian_inbox_stops_at_the_page_cap(caplog):
+    session = _session((200, {"parcels": [], "nextPage": {"pagingState": "again"}}))
+    await _sso_client(session, market="IT").async_get_parcels()
+    assert session.get.call_count == 10
+    assert "more than 10 pages" in caplog.text
+

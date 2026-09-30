@@ -21,12 +21,15 @@ def reset_one_shot_warnings():
     depend on test order.
     """
     from custom_components.inpost.account import parcels
+    from custom_components.inpost.account.countries import it
     from custom_components.inpost.tracking import parcels as tracking_parcels
 
     parcels._unmapped_statuses_logged.clear()
     parcels._payload_shape_logged = False
     tracking_parcels._unmapped_tracking_statuses_logged.clear()
     tracking_parcels._tracking_payload_shape_logged = False
+    it._payload_shape_logged = False
+    it._unmapped_statuses_logged.clear()
     yield
 
 

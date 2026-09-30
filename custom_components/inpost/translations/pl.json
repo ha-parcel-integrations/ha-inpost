@@ -5,11 +5,18 @@
       "user": {
         "title": "Konfiguracja InPost",
         "menu_options": {
-          "account": "Konto (Polska, automatyczny import)",
+          "account": "Konto (automatyczny import)",
           "tracking": "Numery przesyłek"
         }
       },
       "account": {
+        "title": "Konfiguracja konta InPost",
+        "description": "Wybierz kraj, w którym zarejestrowane jest Twoje konto InPost.",
+        "data": {
+          "country": "Kraj"
+        }
+      },
+      "sign_in": {
         "title": "Zaloguj się do InPost",
         "description": "Otwórz ten link w przeglądarce i zaloguj się na swoje konto InPost (numer telefonu i kod SMS):\n\n{authorize_url}\n\nPotem strona nie załaduje się do końca — tak ma być. Skopiuj pełny adres z paska adresu przeglądarki i wklej go poniżej.",
         "data": {
@@ -38,7 +45,7 @@
       "invalid_auth": "InPost odrzucił logowanie. Otwórz link ponownie i zaloguj się jeszcze raz.",
       "cannot_connect": "Nie można połączyć się z InPost. Spróbuj ponownie.",
       "invalid_redirect": "To nie wygląda na adres, na który przekierowała Cię strona logowania. Po zalogowaniu skopiuj cały adres.",
-      "market_not_supported": "To nie jest polskie konto InPost. Importować można tylko polskie konta; paczki z innych krajów dodaj jako numery śledzenia."
+      "wrong_market": "To logowanie dotyczy konta InPost w innym kraju niż wybrany. Przeglądarka może być nadal zalogowana na inne konto InPost: otwórz link w oknie prywatnym i zaloguj się ponownie."
     },
     "abort": {
       "already_configured": "To konto InPost jest już skonfigurowane.",

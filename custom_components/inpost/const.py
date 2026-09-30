@@ -39,13 +39,30 @@ KNOWN_CAPABILITIES = frozenset(
 # populates — feeds the comparison table on the docs site. Keep in lockstep
 # with account/parcels.py and tracking/parcels.py: the account inbox
 # (normalize_parcel) exposes a pickup point and a deep link; the keyless
-# public-tracking hubs (normalize_tracking_parcel) expose neither weight/dimensions/delivery-window nor a pickup point (no
-# locker data at all), but do get a per-country deep link via
+# public-tracking hubs (normalize_tracking_parcel) expose neither
+# weight/dimensions/delivery-window nor a pickup point (no locker data at
+# all), but do get a per-country deep link via
 # TRACKING_URL_BY_COUNTRY. These are two structurally different APIs, not a
 # stronger/weaker split of the same one — see CAPABILITIES_BY_VARIANT below.
 CAPABILITIES_BY_VARIANT = {
     "Account": frozenset({"pickup_point", "url", "history"}),
+    # An Italian account reads a different backend whose per-parcel shape is
+    # not yet confirmed with a real parcel; claim only what is certain.
+    "Account (IT)": frozenset({"url", "history"}),
     "Tracking": frozenset({"url", "history"}),
+}
+
+# Consumer tracking deep link per country, for a tracking-hub or Italian
+# account parcel's ``url`` field. Each InPost storefront runs its own tracking page — different host,
+# path and query param per country, live-confirmed 2026-08-31. A country
+# missing here (should not happen for anything in TRACKING_COUNTRIES) leaves
+# ``url`` as ``None`` rather than guessing a template.
+TRACKING_URL_BY_COUNTRY = {
+    "PL": "https://inpost.pl/en/find-parcel?number={tracking_code}",
+    "IT": "https://inpost.it/trova-il-tuo-pacco?number={tracking_code}",
+    "PT": "https://www.inpost.pt/seguimento-do-envio/?exp={tracking_code}&language=pt&pais=PT",
+    "GB": "https://inpost.co.uk/tracking/result?parcel_code={tracking_code}",
+    "ES": "https://www.inpost.es/seguimiento-del-envio/?exp={tracking_code}&language=ES",
 }
 
 # Countries a keyless public-tracking hub can be set up for.
@@ -63,6 +80,11 @@ CONF_REFRESH_TOKEN = "refresh_token"
 CONF_AUTH_METHOD = "auth_method"
 AUTH_METHOD_SMS = "sms"
 AUTH_METHOD_SSO = "sso"
+# The market the account is registered in, which decides the parcel backend.
+# Entries from before the market choice have no value and are Polish.
+CONF_MARKET = "market"
+ACCOUNT_MARKETS = ("PL", "IT")
+DEFAULT_ACCOUNT_MARKET = "PL"
 CONF_COUNTRY = "country"
 CONF_PARCELS = "parcels"
 CONF_TRACKING_CODE = "tracking_code"

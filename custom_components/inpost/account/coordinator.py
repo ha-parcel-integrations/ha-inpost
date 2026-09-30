@@ -21,6 +21,7 @@ from homeassistant.util import dt as dt_util
 
 from ..const import (
     CONF_INCLUDE_HISTORY,
+    CONF_MARKET,
     DEFAULT_INCLUDE_HISTORY,
     DOMAIN,
     HOT_INTERVAL_MINUTES,
@@ -32,6 +33,7 @@ from ..const import (
     ParcelStatus,
 )
 from .client import InPostApiClient, InPostApiError, InPostAuthReauthRequired
+from .countries import it
 from .parcels import apply_delivered_filter, normalize_parcel, sort_parcels_by_ts
 
 _LOGGER = logging.getLogger(__name__)
@@ -119,6 +121,12 @@ class InPostCoordinator(DataUpdateCoordinator[list[dict]]):
             update_interval=timedelta(minutes=HOT_INTERVAL_MINUTES),
         )
         self._client = client
+        # An Italian account's parcels come from a backend with its own shape.
+        self._normalize = (
+            it.normalize_parcel
+            if entry.data.get(CONF_MARKET) == "IT"
+            else normalize_parcel
+        )
         self.delivered: list[dict] = []
         # barcode -> last seen ParcelStatus / (planned_from, planned_to).
         # ``None`` on the first refresh so events are suppressed for parcels
@@ -223,7 +231,7 @@ class InPostCoordinator(DataUpdateCoordinator[list[dict]]):
 
         include_history = self._include_history
         normalized = [
-            normalize_parcel(raw, include_history=include_history) for raw in raws
+            self._normalize(raw, include_history=include_history) for raw in raws
         ]
         active = [parcel for parcel in normalized if not parcel["delivered"]]
         delivered = [parcel for parcel in normalized if parcel["delivered"]]

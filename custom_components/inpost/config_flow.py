@@ -31,7 +31,6 @@ from .account.client import (
     async_exchange_code,
 )
 from .account.oauth import (
-    SUPPORTED_MARKET,
     build_authorization_url,
     decode_token_claims,
     generate_nonce,
@@ -41,6 +40,7 @@ from .account.oauth import (
     parse_callback_url,
 )
 from .const import (
+    ACCOUNT_MARKETS,
     AUTH_METHOD_SSO,
     CONF_AUTH_METHOD,
     CONF_AUTH_TOKEN,
@@ -48,10 +48,12 @@ from .const import (
     CONF_DELIVERED_FILTER_AMOUNT,
     CONF_DELIVERED_FILTER_TYPE,
     CONF_INCLUDE_HISTORY,
+    CONF_MARKET,
     CONF_PARCELS,
     CONF_PHONE,
     CONF_REFRESH_TOKEN,
     CONF_TRACKING_CODE,
+    DEFAULT_ACCOUNT_MARKET,
     DEFAULT_DELIVERED_FILTER_AMOUNT,
     DEFAULT_DELIVERED_FILTER_TYPE,
     DEFAULT_INCLUDE_HISTORY,
@@ -62,6 +64,13 @@ from .const import (
 _LOGGER = logging.getLogger(__name__)
 
 _CALLBACK_SCHEMA = vol.Schema({vol.Required("callback_url"): str})
+_ACCOUNT_MARKET_SELECTOR = selector.SelectSelector(
+    selector.SelectSelectorConfig(
+        options=[market.lower() for market in ACCOUNT_MARKETS],
+        translation_key=CONF_COUNTRY,
+        mode=selector.SelectSelectorMode.DROPDOWN,
+    )
+)
 _TRACKING_COUNTRY_SELECTOR = selector.SelectSelector(
     selector.SelectSelectorConfig(
         options=[country.lower() for country in TRACKING_COUNTRIES],
@@ -81,7 +90,8 @@ class InPostConfigFlow(ConfigFlow, domain=DOMAIN):
         self._authorize_url: str | None = None
         self._code_verifier: str | None = None
         self._state: str | None = None
-        self._phone: str | None = None
+        self._market: str = DEFAULT_ACCOUNT_MARKET
+        self._account_id: str | None = None
         self._tokens: tuple[str, str] | None = None
 
     @staticmethod
@@ -111,14 +121,18 @@ class InPostConfigFlow(ConfigFlow, domain=DOMAIN):
         self._code_verifier, challenge = generate_pkce()
         self._state = generate_state()
         self._authorize_url = build_authorization_url(
-            challenge, self._state, generate_nonce(), self.hass.config.language
+            challenge,
+            self._state,
+            generate_nonce(),
+            self.hass.config.language,
+            self._market,
         )
 
     async def _async_sign_in(self, callback_url: str) -> str | None:
         """Validate and exchange a pasted callback URL.
 
         Returns a form error, or ``None`` with ``self._tokens`` and
-        ``self._phone`` set. Never logs the pasted value.
+        ``self._account_id`` set. Never logs the pasted value.
         """
         if not is_valid_callback_url(callback_url):
             return "invalid_redirect"
@@ -137,16 +151,42 @@ class InPostConfigFlow(ConfigFlow, domain=DOMAIN):
             return "cannot_connect"
 
         claims = decode_token_claims(tokens[0]) or {}
-        if claims.get("market") != SUPPORTED_MARKET:
-            return "market_not_supported"
+        if claims.get("market") != self._market:
+            # Usually a browser still signed in to another InPost account.
+            return "wrong_market"
         phone = claims.get("phone")
         if not (isinstance(phone, str) and phone.isdigit()):
             return "invalid_auth"
-        self._phone = phone
+        # The bare national number, as SMS-era entries are keyed, so an
+        # account set up both ways is caught as a duplicate. Polish (9 digits)
+        # and Italian (10 digits) numbers cannot collide.
+        self._account_id = phone
         self._tokens = tokens
         return None
 
     async def async_step_account(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Ask which country the account is registered in.
+
+        The market decides the sign-in page's phone prefix and which parcel
+        backend the account reads, so it has to be known before the link.
+        """
+        if user_input is not None:
+            self._market = user_input[CONF_COUNTRY].upper()
+            return await self.async_step_sign_in()
+        return self.async_show_form(
+            step_id="account",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(
+                        CONF_COUNTRY, default=DEFAULT_ACCOUNT_MARKET.lower()
+                    ): _ACCOUNT_MARKET_SELECTOR
+                }
+            ),
+        )
+
+    async def async_step_sign_in(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Show the sign-in link and take the pasted-back callback URL."""
@@ -158,15 +198,14 @@ class InPostConfigFlow(ConfigFlow, domain=DOMAIN):
             if error is not None:
                 errors["base"] = error
             else:
-                assert self._phone is not None and self._tokens is not None
-                # Same bare national number the SMS-era entries are keyed on,
-                # so an account set up both ways is caught as a duplicate.
-                await self.async_set_unique_id(self._phone)
+                assert self._account_id is not None and self._tokens is not None
+                await self.async_set_unique_id(self._account_id)
                 self._abort_if_unique_id_configured()
                 return self.async_create_entry(
-                    title=self._phone,
+                    title=self._account_id,
                     data={
-                        CONF_PHONE: self._phone,
+                        CONF_PHONE: self._account_id,
+                        CONF_MARKET: self._market,
                         CONF_AUTH_METHOD: AUTH_METHOD_SSO,
                         CONF_AUTH_TOKEN: self._tokens[0],
                         CONF_REFRESH_TOKEN: self._tokens[1],
@@ -179,7 +218,7 @@ class InPostConfigFlow(ConfigFlow, domain=DOMAIN):
                 )
 
         return self.async_show_form(
-            step_id="account",
+            step_id="sign_in",
             data_schema=_CALLBACK_SCHEMA,
             errors=errors,
             description_placeholders={"authorize_url": self._authorize_url or ""},
@@ -214,6 +253,7 @@ class InPostConfigFlow(ConfigFlow, domain=DOMAIN):
         self, entry_data: Mapping[str, Any]
     ) -> ConfigFlowResult:
         """Start reauth: the stored token pair can no longer be refreshed."""
+        self._market = entry_data.get(CONF_MARKET, DEFAULT_ACCOUNT_MARKET)
         return await self.async_step_reauth_confirm()
 
     async def async_step_reauth_confirm(
@@ -231,14 +271,15 @@ class InPostConfigFlow(ConfigFlow, domain=DOMAIN):
             if error is not None:
                 errors["base"] = error
             else:
-                assert self._phone is not None and self._tokens is not None
+                assert self._account_id is not None and self._tokens is not None
                 # Signing in to a *different* account must not silently
                 # rebind this entry to it.
-                await self.async_set_unique_id(self._phone)
+                await self.async_set_unique_id(self._account_id)
                 self._abort_if_unique_id_mismatch(reason="wrong_account")
                 return self.async_update_reload_and_abort(
                     self._get_reauth_entry(),
                     data_updates={
+                        CONF_MARKET: self._market,
                         CONF_AUTH_METHOD: AUTH_METHOD_SSO,
                         CONF_AUTH_TOKEN: self._tokens[0],
                         CONF_REFRESH_TOKEN: self._tokens[1],

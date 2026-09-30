@@ -5,11 +5,18 @@
       "user": {
         "title": "Configura InPost",
         "menu_options": {
-          "account": "Account (Polonia, importazione automatica)",
+          "account": "Account (importazione automatica)",
           "tracking": "Codici di tracciamento"
         }
       },
       "account": {
+        "title": "Configura account InPost",
+        "description": "Scegli il paese in cui è registrato il tuo account InPost.",
+        "data": {
+          "country": "Paese"
+        }
+      },
+      "sign_in": {
         "title": "Accedi a InPost",
         "description": "Apri questo link in un browser e accedi con il tuo account InPost (numero di telefono e codice SMS):\n\n{authorize_url}\n\nDopo l'accesso la pagina non finirà di caricarsi: è normale. Copia l'indirizzo completo dalla barra degli indirizzi del browser e incollalo qui sotto.",
         "data": {
@@ -38,7 +45,7 @@
       "invalid_auth": "InPost ha rifiutato l'accesso. Apri di nuovo il link e accedi un'altra volta.",
       "cannot_connect": "Impossibile raggiungere InPost. Riprova.",
       "invalid_redirect": "Questo non sembra l'indirizzo a cui ti ha rimandato la pagina di accesso. Dopo l'accesso copia l'indirizzo completo.",
-      "market_not_supported": "Questo non è un account InPost polacco. Si possono importare solo account polacchi; aggiungi le spedizioni di altri paesi come codici di tracciamento."
+      "wrong_market": "Questo accesso riguarda un account InPost di un paese diverso da quello scelto. Il browser potrebbe essere ancora collegato a un altro account InPost: apri il link in una finestra privata e accedi di nuovo."
     },
     "abort": {
       "already_configured": "Questo account InPost è già configurato.",

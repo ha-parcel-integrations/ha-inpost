@@ -19,6 +19,7 @@ from custom_components.inpost.const import (
     CONF_DELIVERED_FILTER_AMOUNT,
     CONF_DELIVERED_FILTER_TYPE,
     CONF_INCLUDE_HISTORY,
+    CONF_MARKET,
     CONF_PHONE,
     CONF_REFRESH_TOKEN,
     DOMAIN,
@@ -32,8 +33,10 @@ EXCHANGE = "custom_components.inpost.config_flow.async_exchange_code"
 CALLBACK = "https://account.inpost-group.com/callback?code=the-code&state={state}"
 
 
-def _tokens(market: str = "PL", phone: str | None = PHONE) -> tuple[str, str]:
-    claims = {"market": market, "phone_prefix": "+48"}
+def _tokens(
+    market: str = "PL", phone: str | None = PHONE, prefix: str = "+48"
+) -> tuple[str, str]:
+    claims = {"market": market, "phone_prefix": prefix}
     if phone is not None:
         claims["phone"] = phone
     return make_jwt(claims), "ref-1"
@@ -49,12 +52,16 @@ def _state(result) -> str:
 # ---------------------------------------------------------------------------
 
 
-async def _start(hass):
+async def _start(hass, country: str = "pl"):
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": SOURCE_USER}
     )
-    return await hass.config_entries.flow.async_configure(
+    result = await hass.config_entries.flow.async_configure(
         result["flow_id"], {"next_step_id": "account"}
+    )
+    assert result["step_id"] == "account"
+    return await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_COUNTRY: country}
     )
 
 
@@ -68,7 +75,7 @@ async def _paste(hass, result, exchange: AsyncMock, *, state: str | None = None)
 
 async def test_sign_in_creates_an_entry_keyed_on_the_token_phone(hass):
     result = await _start(hass)
-    assert result["step_id"] == "account"
+    assert result["step_id"] == "sign_in"
     assert result["description_placeholders"]["authorize_url"].startswith(
         "https://account.inpost-group.com/oauth2/authorize?"
     )
@@ -82,6 +89,7 @@ async def test_sign_in_creates_an_entry_keyed_on_the_token_phone(hass):
     assert result["result"].unique_id == PHONE
     assert result["data"] == {
         CONF_PHONE: PHONE,
+        CONF_MARKET: "PL",
         CONF_AUTH_METHOD: "sso",
         CONF_AUTH_TOKEN: tokens[0],
         CONF_REFRESH_TOKEN: "ref-1",
@@ -124,7 +132,7 @@ async def test_callback_without_a_code_is_rejected(hass):
 async def test_rejected_code_surfaces_invalid_auth(hass):
     result = await _start(hass)
     result = await _paste(hass, result, AsyncMock(side_effect=InPostAuthReauthRequired("400")))
-    assert result["step_id"] == "account"
+    assert result["step_id"] == "sign_in"
     assert result["errors"] == {"base": "invalid_auth"}
 
 
@@ -135,10 +143,36 @@ async def test_unreachable_sign_in_surfaces_cannot_connect(hass):
         assert result["errors"] == {"base": "cannot_connect"}
 
 
-async def test_a_non_polish_account_is_refused(hass):
+async def test_an_account_from_another_country_than_chosen_is_refused(hass):
+    """Usually a browser still signed in to another InPost account."""
     result = await _start(hass)
     result = await _paste(hass, result, AsyncMock(return_value=_tokens(market="IT")))
-    assert result["errors"] == {"base": "market_not_supported"}
+    assert result["errors"] == {"base": "wrong_market"}
+
+
+async def test_italian_sign_in_creates_an_italian_entry(hass):
+    result = await _start(hass, "it")
+    query = parse_qs(urlparse(result["description_placeholders"]["authorize_url"]).query)
+    assert query["supported_markets"] == ["IT"]
+
+    tokens = _tokens(market="IT", phone="3201234567", prefix="+39")
+    result = await _paste(hass, result, AsyncMock(return_value=tokens))
+
+    assert result["type"] == "create_entry"
+    assert result["title"] == "3201234567"
+    assert result["result"].unique_id == "3201234567"
+    assert result["data"][CONF_MARKET] == "IT"
+    assert result["data"][CONF_PHONE] == "3201234567"
+
+
+def test_account_countries_are_translated_in_every_locale():
+    translations_dir = Path(__file__).parents[1] / "custom_components/inpost"
+    paths = [translations_dir / "strings.json"] + sorted(
+        (translations_dir / "translations").glob("*.json")
+    )
+    for path in paths:
+        payload = json.loads(path.read_text())
+        assert {"pl", "it"} <= set(payload["selector"]["country"]["options"]), path
 
 
 async def test_a_token_without_a_phone_is_refused(hass):

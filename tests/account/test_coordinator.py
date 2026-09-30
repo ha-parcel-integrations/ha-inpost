@@ -210,3 +210,23 @@ async def test_delivery_time_event_never_fires(hass):
     await coordinator._async_update_data()
     await hass.async_block_till_done()
     assert events == []
+
+
+async def test_italian_account_uses_the_italian_normaliser(hass):
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title="3201234567",
+        unique_id="3201234567",
+        data={"phone": "3201234567", "market": "IT", "auth_token": "a", "refresh_token": "r"},
+    )
+    entry.add_to_hass(hass)
+    client = _client(
+        {
+            "primaryParcelNumber": "IT1",
+            "events": [{"eventCode": "LMD.1005", "eventTime": "2026-09-30T10:00:00Z", "status": "AWAITING_COLLECTION"}],
+        }
+    )
+    data = await InPostCoordinator(hass, client, entry)._async_update_data()
+    assert data[0]["barcode"] == "IT1"
+    assert data[0]["status"] == ParcelStatus.AT_PICKUP_POINT
+

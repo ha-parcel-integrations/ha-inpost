@@ -34,7 +34,8 @@ from typing import Any
 
 import aiohttp
 
-from ..const import AUTH_METHOD_SMS, AUTH_METHOD_SSO
+from ..const import AUTH_METHOD_SMS, AUTH_METHOD_SSO, DEFAULT_ACCOUNT_MARKET
+from .countries import it
 from .oauth import OAUTH_CLIENT_ID, OAUTH_REDIRECT_URI, OAUTH_TOKEN_URL
 
 API_BASE = "https://api-inmobile-pl.easypack24.net"
@@ -185,13 +186,15 @@ class InPostApiClient:
         on_tokens_updated: Callable[[str, str], None] | None = None,
         *,
         auth_method: str = AUTH_METHOD_SMS,
+        market: str = DEFAULT_ACCOUNT_MARKET,
     ) -> None:
-        """Initialise with a session, the stored token pair and its kind."""
+        """Initialise with a session, the stored token pair, its kind and market."""
         self._session = session
         self._auth_token = auth_token
         self._refresh_token = refresh_token
         self._on_tokens_updated = on_tokens_updated
         self._auth_method = auth_method
+        self._market = market
         # Serialise refreshes: two concurrent 401s must not both refresh and
         # invalidate each other's new token.
         self._refresh_lock = asyncio.Lock()
@@ -203,19 +206,47 @@ class InPostApiClient:
 
     async def async_get_parcels(self) -> list[dict[str, Any]]:
         """Return the account's tracked parcels as raw payload dicts."""
+        if self._market == "IT":
+            return await self._async_get_italian_parcels()
         payload = await self._get(PARCELS_URL)
+        return self._parcels_of(payload)
+
+    async def _async_get_italian_parcels(self) -> list[dict[str, Any]]:
+        """Walk the Italian inbox's cursor pages into one list."""
+        parcels: list[dict[str, Any]] = []
+        params = {"role": it.PARCELS_ROLE}
+        for _ in range(it.MAX_PAGES):
+            payload = await self._get(it.PARCELS_URL, params)
+            parcels.extend(self._parcels_of(payload))
+            next_page = payload.get("nextPage")
+            cursor = next_page.get("pagingState") if isinstance(next_page, dict) else None
+            if not cursor:
+                return parcels
+            params = {"role": it.PARCELS_ROLE, "pagingState": cursor}
+        _LOGGER.warning(
+            "InPost Italy returned more than %s pages of parcels; showing the first %s",
+            it.MAX_PAGES,
+            it.MAX_PAGES,
+        )
+        return parcels
+
+    @staticmethod
+    def _parcels_of(payload: dict[str, Any]) -> list[dict[str, Any]]:
+        """Return the ``parcels`` list of one response, or raise."""
         parcels = payload.get("parcels")
         if not isinstance(parcels, list):
             raise InPostApiError("parcel list missing from response")
         return [parcel for parcel in parcels if isinstance(parcel, dict)]
 
-    async def _get(self, url: str) -> dict[str, Any]:
+    async def _get(
+        self, url: str, params: dict[str, str] | None = None
+    ) -> dict[str, Any]:
         """GET ``url`` with auth, refreshing once on a 401."""
-        status, payload, retry_after = await self._authed_get(url)
+        status, payload, retry_after = await self._authed_get(url, params)
         if status == 401:
             # The access token expired; refresh and try exactly once more.
             await self._refresh()
-            status, payload, retry_after = await self._authed_get(url)
+            status, payload, retry_after = await self._authed_get(url, params)
 
         if status != 200:
             raise InPostApiError(
@@ -227,7 +258,9 @@ class InPostApiClient:
             raise InPostApiError("unexpected body (not a JSON object)")
         return payload
 
-    async def _authed_get(self, url: str) -> tuple[int, Any, float | None]:
+    async def _authed_get(
+        self, url: str, params: dict[str, str] | None = None
+    ) -> tuple[int, Any, float | None]:
         """Perform one authenticated GET; return ``(status, parsed_body|None)``."""
         # The app's own token is sent bare; the sign-in's token is a real Bearer.
         authorization = (
@@ -237,7 +270,7 @@ class InPostApiClient:
         )
         headers = {**_BASE_HEADERS, "Authorization": authorization}
         async with self._session.get(
-            url, headers=headers, timeout=_TIMEOUT
+            url, params=params, headers=headers, timeout=_TIMEOUT
         ) as response:
             if response.status == 200:
                 return response.status, await response.json(content_type=None), None

@@ -10,14 +10,16 @@ layer.
 **Two structurally independent backends, one repo.** InPost started as the
 suite's first **account-based** carrier with an SMS login (Poland only;
 auto-imports the account's parcels, no manual services); new setups now sign
-in through the InPost Group sign-in page instead. It has since grown a second,
+in through the InPost Group sign-in page instead, for a Polish or an Italian
+account. It has since grown a second,
 **keyless public-tracking** model (`PL`/`IT`/`PT`/`GB`/`ES`) for barcode-only setup:
 no login, one config entry per country, parcels added/removed via the
 `track_parcel`/`untrack_parcel` services. The two live side by side rather than
 converging into one coordinator/capability shape the way `ha-gls`/`ha-dpd`
 converge same-model countries — deliberately, because the auth models
 themselves differ in kind (a signed-in token pair vs. keyless GET), not just the data
-depth. See `CAPABILITIES_BY_VARIANT` in `const.py` for the two capability sets.
+depth. See `CAPABILITIES_BY_VARIANT` in `const.py` for the capability sets
+(Polish account, Italian account, tracking).
 
 ## Shared conventions — fetch when relevant
 
@@ -59,9 +61,9 @@ Where this repo diverges from it, that is recorded below under
 ## Carrier-specific decisions (integration only)
 
 InPost is the Paczkomat locker network. First account-based carrier with an
-SMS login and first with a real "waiting in a locker" state — that part stays Poland-only
-(the same sign-in serves other markets' accounts, but their parcels live on a
-different backend this integration does not read). Public tracking (`PL`/`IT`/`PT`/`GB`/`ES`)
+SMS login and first with a real "waiting in a locker" state. The account
+backend serves Poland and Italy, on two different parcel backends behind one
+sign-in (see *Market* below). Public tracking (`PL`/`IT`/`PT`/`GB`/`ES`)
 is a separate, later addition; see the backend split at the top of this file.
 **Confirmed against a real account 2026-08-15** — auth, the parcel-list
 endpoint and the happy path all round-tripped correctly; the fuller detailed
@@ -77,9 +79,24 @@ free text.
   captcha and redirects only to an InPost-owned callback, so the config flow
   shows a PKCE sign-in link (`account/oauth.py`), the user signs in in their
   own browser and pastes the callback URL back; it is validated for
-  host/path/state before the code is ever exchanged. Setup and reauth are the
-  same one step. The same link is kept for the whole flow, so a retry does not
-  invalidate a link already opened.
+  host/path/state before the code is ever exchanged. Setup asks for the
+  **country first** (`account` step), then shows the link (`sign_in`); reauth
+  reuses the entry's country. The same link is kept for the whole flow, so a
+  retry does not invalidate a link already opened.
+- **Market: `CONF_MARKET` picks the parcel backend.** The token's `market`
+  claim decides which backend an account lives on, and the two refuse each
+  other's tokens: `PL` reads the legacy inbox (`/v3/parcels/tracked`,
+  `account/parcels.py`); `IT` reads the group backend's paged list
+  (`account/countries/it.py`, its own normaliser). Entries without the key are
+  Polish. A token whose market differs from the chosen country is refused as
+  `wrong_market` — in practice a browser still signed in to another account.
+- **Italy is built without a real parcel.** Sign-in and the (empty) parcel
+  list are live-confirmed; the per-parcel shape is modelled on the app. The
+  status comes from InPost's own published catalogue (8 codes, complete), the
+  current status is the newest event's, and a payload that differs from the
+  model warns once. `weight`/`dimensions` stay `None` and `Account (IT)`
+  claims only `url`/`history` until a real parcel settles units and the
+  pickup-point shape.
 - **Two token kinds, one inbox — `CONF_AUTH_METHOD` picks.** `sso` entries hold
   the sign-in's OAuth pair: `Bearer` header, refreshed at the sign-in's token
   endpoint (a 400/401 there is a dead session). Entries without the key are
@@ -87,13 +104,11 @@ free text.
   `/v1/authenticate`. **Existing SMS entries are never forced over**; their next
   reauth moves them to `sso` in place (same entry, same entities). Do not add a
   startup migration or bring the SMS login steps back.
-- **`unique_id` is the token's `phone` claim**, the same bare 9-digit national
-  number SMS entries were keyed on, so the same account cannot be added twice
-  across the two kinds, and a reauth that signs in to another phone aborts
-  `wrong_account` instead of rebinding the entry. Do not switch it to `sub`.
-  A token whose `market` claim is not `PL` is refused (`market_not_supported`):
-  such accounts live on a different parcel backend this integration does not
-  read.
+- **`unique_id` is the token's `phone` claim**, the bare national number
+  without dial code, as SMS entries were keyed, so the same account cannot be
+  added twice across the two token kinds. Polish (9 digits) and Italian (10)
+  numbers cannot collide, so no prefix is needed. A reauth that signs in to another phone aborts `wrong_account`
+  instead of rebinding the entry. Do not switch it to `sub`.
 - **Token handling (do not weaken).** Tokens live in `entry.data` (never options,
   never diagnostics). A 401 triggers one refresh + retry; a *failed* refresh →
   `InPostAuthReauthRequired` → `ConfigEntryAuthFailed` → reauth; a refresh
@@ -150,12 +165,13 @@ owns its client, coordinator, normaliser and status map under
 |---|---|
 | `account/client.py` | `async_exchange_code`, `InPostApiClient` (both token kinds, refresh, parcel list), `InPostApiError`/`InPostAuthReauthRequired`, the inbox host URLs |
 | `account/oauth.py` | Pure sign-in helpers: PKCE, the authorization URL, callback validation, token-claim decoding |
+| `account/countries/it.py` | The Italian backend: its paged parcel URL, catalogue status map and normaliser |
 | `account/coordinator.py` | `InPostCoordinator` and the dynamic-polling helpers both sources use |
 | `account/parcels.py` | `normalize_parcel`, `STATUS_MAP` + `STATUS_GROUP_MAP`, and the suite-wide helpers (`parse_iso`, sort, delivered filter, `NEW_ISSUE_URL`) |
 | `tracking/client.py` | `InPostTrackingApiClient`, `EASY_TRACKING_URL` |
 | `tracking/coordinator.py` | `InPostTrackingCoordinator(InPostCoordinator)` |
-| `tracking/parcels.py` | `normalize_tracking_parcel`, `TRACKING_STATUS_MAP`, `TRACKING_URL_BY_COUNTRY` |
-| `const.py` | Shared keys and defaults, and **`CAPABILITIES_BY_VARIANT`, which must stay here**: the docs site reads it from this file |
+| `tracking/parcels.py` | `normalize_tracking_parcel`, `TRACKING_STATUS_MAP` |
+| `const.py` | Shared keys and defaults, `TRACKING_URL_BY_COUNTRY` (tracking hubs and Italian accounts), and **`CAPABILITIES_BY_VARIANT`, which must stay here**: the docs site reads it from this file |
 | `config_flow.py`, `services.py` (tracking hubs only), `diagnostics.py` (`TO_REDACT` incl. `qrCode`/`openCode`), platforms | Root. They are shared across sources |
 
 `tracking/` imports shared pieces from `account/`, one way only. `api.py`,

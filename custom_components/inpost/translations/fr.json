@@ -5,11 +5,18 @@
       "user": {
         "title": "Configurer InPost",
         "menu_options": {
-          "account": "Compte (Pologne, importation automatique)",
+          "account": "Compte (importation automatique)",
           "tracking": "Codes de suivi"
         }
       },
       "account": {
+        "title": "Configurer le compte InPost",
+        "description": "Choisissez le pays dans lequel votre compte InPost est enregistré.",
+        "data": {
+          "country": "Pays"
+        }
+      },
+      "sign_in": {
         "title": "Se connecter à InPost",
         "description": "Ouvrez ce lien dans un navigateur et connectez-vous avec votre compte InPost (numéro de téléphone et code SMS) :\n\n{authorize_url}\n\nEnsuite, la page ne finira pas de se charger : c'est normal. Copiez l'adresse complète depuis la barre d'adresse du navigateur et collez-la ci-dessous.",
         "data": {
@@ -38,7 +45,7 @@
       "invalid_auth": "InPost a refusé la connexion. Ouvrez à nouveau le lien et reconnectez-vous.",
       "cannot_connect": "Impossible de joindre InPost. Veuillez réessayer.",
       "invalid_redirect": "Cela ne ressemble pas à l'adresse vers laquelle la page de connexion vous a renvoyé. Copiez l'adresse complète après vous être connecté.",
-      "market_not_supported": "Ce n'est pas un compte InPost polonais. Seuls les comptes polonais peuvent être importés ; ajoutez les colis d'autres pays comme codes de suivi."
+      "wrong_market": "Cette connexion concerne un compte InPost d'un autre pays que celui choisi. Votre navigateur est peut-être encore connecté à un autre compte InPost : ouvrez le lien dans une fenêtre privée et reconnectez-vous."
     },
     "abort": {
       "already_configured": "Ce compte InPost est déjà configuré.",

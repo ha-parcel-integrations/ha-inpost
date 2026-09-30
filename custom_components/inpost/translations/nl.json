@@ -5,11 +5,18 @@
       "user": {
         "title": "InPost instellen",
         "menu_options": {
-          "account": "Account (Polen, automatisch importeren)",
+          "account": "Account (automatisch importeren)",
           "tracking": "Trackingcodes"
         }
       },
       "account": {
+        "title": "InPost-account instellen",
+        "description": "Kies het land waarin je InPost-account is geregistreerd.",
+        "data": {
+          "country": "Land"
+        }
+      },
+      "sign_in": {
         "title": "Inloggen bij InPost",
         "description": "Open deze link in een browser en log in met je InPost-account (telefoonnummer en sms-code):\n\n{authorize_url}\n\nDaarna laadt de pagina niet verder — dat is de bedoeling. Kopieer het volledige adres uit de adresbalk van je browser en plak het hieronder.",
         "data": {
@@ -38,7 +45,7 @@
       "invalid_auth": "InPost heeft de login geweigerd. Open de link opnieuw en log nog een keer in.",
       "cannot_connect": "Kan InPost niet bereiken. Probeer het opnieuw.",
       "invalid_redirect": "Dat lijkt niet het adres waar de loginpagina je naartoe stuurde. Kopieer na het inloggen het volledige adres.",
-      "market_not_supported": "Dit is geen Pools InPost-account. Alleen Poolse accounts kunnen worden geïmporteerd; voeg pakketten uit andere landen toe als trackingcode."
+      "wrong_market": "Die login hoort bij een InPost-account in een ander land dan je koos. Mogelijk is je browser nog ingelogd op een ander InPost-account: open de link in een privévenster en log opnieuw in."
     },
     "abort": {
       "already_configured": "Dit InPost-account is al ingesteld.",

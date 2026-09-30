@@ -5,11 +5,18 @@
       "user": {
         "title": "Set up InPost",
         "menu_options": {
-          "account": "Account (Poland, auto-import)",
+          "account": "Account (auto-import)",
           "tracking": "Tracking codes"
         }
       },
       "account": {
+        "title": "Set up InPost account",
+        "description": "Choose the country your InPost account is registered in.",
+        "data": {
+          "country": "Country"
+        }
+      },
+      "sign_in": {
         "title": "Sign in to InPost",
         "description": "Open this link in a browser and sign in with your InPost account (phone number and SMS code):\n\n{authorize_url}\n\nAfterwards the page will not finish loading — that is expected. Copy the full address from your browser's address bar and paste it below.",
         "data": {
@@ -38,7 +45,7 @@
       "invalid_auth": "InPost rejected the sign-in. Open the link again and sign in once more.",
       "cannot_connect": "Could not reach InPost. Please try again.",
       "invalid_redirect": "That does not look like the address the sign-in page sent you to. Make sure you copied the whole address after signing in.",
-      "market_not_supported": "This is not a Polish InPost account. Only Polish accounts can be imported; add parcels from other countries as tracking codes."
+      "wrong_market": "That sign-in was for an InPost account in a different country than the one you chose. Your browser may still be signed in to another InPost account: open the link in a private window and sign in again."
     },
     "abort": {
       "already_configured": "That InPost account is already set up.",

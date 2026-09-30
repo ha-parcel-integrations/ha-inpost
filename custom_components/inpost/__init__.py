@@ -15,7 +15,9 @@ from .const import (
     CONF_AUTH_METHOD,
     CONF_AUTH_TOKEN,
     CONF_COUNTRY,
+    CONF_MARKET,
     CONF_REFRESH_TOKEN,
+    DEFAULT_ACCOUNT_MARKET,
     PLATFORMS,
 )
 from .services import async_setup_services, async_unload_services
@@ -76,6 +78,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: InPostConfigEntry) -> bo
             entry.data[CONF_REFRESH_TOKEN],
             on_tokens_updated=_persist_tokens,
             auth_method=entry.data.get(CONF_AUTH_METHOD, AUTH_METHOD_SMS),
+            market=entry.data.get(CONF_MARKET, DEFAULT_ACCOUNT_MARKET),
         )
         coordinator = InPostCoordinator(hass, client, entry)
 

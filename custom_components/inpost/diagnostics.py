@@ -28,6 +28,13 @@ TO_REDACT = {
     "pickUpPoint",
     "address",
     "addressDetails",
+    # Italian account payload fields
+    "primaryParcelNumber",
+    "parcelId",
+    "representativeName",
+    "emailAddress",
+    "accessCode",
+    "location",
     # locker access — a live openCode/qrCode is a physical-security leak
     "openCode",
     "qrCode",

@@ -23,11 +23,6 @@ OAUTH_REDIRECT_URI = "https://account.inpost-group.com/callback"
 OAUTH_CLIENT_ID = "inpost-mobile"
 OAUTH_SCOPE = "openid"
 
-# The market the account inbox serves. The token's own ``market`` claim, not
-# this parameter, decides which backend the account lives on; a token for
-# another market is refused by the inbox this integration reads.
-SUPPORTED_MARKET = "PL"
-
 
 def generate_pkce() -> tuple[str, str]:
     """Return a fresh ``(code_verifier, code_challenge)`` pair (S256)."""
@@ -48,9 +43,13 @@ def generate_nonce() -> str:
 
 
 def build_authorization_url(
-    code_challenge: str, state: str, nonce: str, language: str | None
+    code_challenge: str, state: str, nonce: str, language: str | None, market: str
 ) -> str:
-    """Build the browser sign-in URL for one flow."""
+    """Build the browser sign-in URL for one flow, for one market's accounts.
+
+    ``market`` steers the sign-in page (its phone prefix); the token's own
+    ``market`` claim is what the caller must check afterwards.
+    """
     params = {
         "response_type": "code",
         "client_id": OAUTH_CLIENT_ID,
@@ -61,10 +60,18 @@ def build_authorization_url(
         "state": state,
         "nonce": nonce,
         "response_mode": "query",
-        "lang": "pl-PL" if (language or "").lower().startswith("pl") else "en",
-        "supported_markets": SUPPORTED_MARKET,
+        "lang": _sign_in_language(language, market),
+        "supported_markets": market,
     }
     return f"{OAUTH_AUTHORIZE_URL}?{urlencode(params)}"
+
+
+def _sign_in_language(language: str | None, market: str) -> str:
+    """Pick the sign-in page language: the market's own, or English."""
+    local = {"PL": "pl-PL", "IT": "it-IT"}.get(market)
+    if local and (language or "").lower().startswith(local[:2]):
+        return local
+    return "en"
 
 
 def is_valid_callback_url(value: str) -> bool:

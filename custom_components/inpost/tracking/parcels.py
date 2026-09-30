@@ -10,22 +10,9 @@ import logging
 from datetime import datetime
 
 from ..account.parcels import NEW_ISSUE_URL, parse_iso, to_iso_timestamp
-from ..const import HISTORY_MAX_EVENTS, ParcelStatus
+from ..const import HISTORY_MAX_EVENTS, TRACKING_URL_BY_COUNTRY, ParcelStatus
 
 _LOGGER = logging.getLogger(__name__)
-
-# Consumer tracking deep link per country, for a tracking-hub parcel's ``url``
-# field. Each InPost storefront runs its own tracking page — different host,
-# path and query param per country, live-confirmed 2026-08-31. A country
-# missing here (should not happen for anything in TRACKING_COUNTRIES) leaves
-# ``url`` as ``None`` rather than guessing a template.
-TRACKING_URL_BY_COUNTRY = {
-    "PL": "https://inpost.pl/en/find-parcel?number={tracking_code}",
-    "IT": "https://inpost.it/trova-il-tuo-pacco?number={tracking_code}",
-    "PT": "https://www.inpost.pt/seguimento-do-envio/?exp={tracking_code}&language=pt&pais=PT",
-    "GB": "https://inpost.co.uk/tracking/result?parcel_code={tracking_code}",
-    "ES": "https://www.inpost.es/seguimiento-del-envio/?exp={tracking_code}&language=ES",
-}
 
 # Public cross-border status vocabulary, live-confirmed on IT, PT and GB
 # consignments on 2026-08-31.  These codes are deliberately separate from the

@@ -5,11 +5,18 @@
       "user": {
         "title": "Configurar o InPost",
         "menu_options": {
-          "account": "Conta (Polónia, importação automática)",
+          "account": "Conta (importação automática)",
           "tracking": "Códigos de rastreio"
         }
       },
       "account": {
+        "title": "Configurar conta InPost",
+        "description": "Escolha o país em que a sua conta InPost está registada.",
+        "data": {
+          "country": "País"
+        }
+      },
+      "sign_in": {
         "title": "Iniciar sessão na InPost",
         "description": "Abra este link num navegador e inicie sessão com a sua conta InPost (número de telefone e código SMS):\n\n{authorize_url}\n\nDepois a página não termina de carregar — é normal. Copie o endereço completo da barra de endereços do navegador e cole-o abaixo.",
         "data": {
@@ -38,7 +45,7 @@
       "invalid_auth": "A InPost recusou o início de sessão. Abra o link novamente e inicie sessão outra vez.",
       "cannot_connect": "Não foi possível contactar a InPost. Tente novamente.",
       "invalid_redirect": "Isto não parece o endereço para onde a página de início de sessão o enviou. Copie o endereço completo depois de iniciar sessão.",
-      "market_not_supported": "Esta não é uma conta InPost polaca. Só é possível importar contas polacas; adicione encomendas de outros países como códigos de seguimento."
+      "wrong_market": "Esse início de sessão pertence a uma conta InPost de outro país diferente do escolhido. O navegador pode ainda ter sessão iniciada noutra conta InPost: abra o link numa janela privada e inicie sessão novamente."
     },
     "abort": {
       "already_configured": "Esta conta InPost já está configurada.",
