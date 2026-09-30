@@ -345,3 +345,14 @@ async def test_tracking_hub_options_menu_leads_to_settings_step(hass):
         result["flow_id"], {"next_step_id": "settings"}
     )
     assert result["step_id"] == "settings"
+
+
+async def test_country_dropdowns_sort_by_translated_name(hass):
+    for step in ("account", "tracking"):
+        flow = await hass.config_entries.flow.async_init(
+            DOMAIN, context={"source": SOURCE_USER}
+        )
+        form = await hass.config_entries.flow.async_configure(
+            flow["flow_id"], {"next_step_id": step}
+        )
+        assert form["data_schema"].schema[CONF_COUNTRY].config["sort"] is True, step

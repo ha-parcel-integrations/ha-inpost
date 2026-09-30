@@ -69,6 +69,9 @@ _ACCOUNT_MARKET_SELECTOR = selector.SelectSelector(
         options=[market.lower() for market in ACCOUNT_MARKETS],
         translation_key=CONF_COUNTRY,
         mode=selector.SelectSelectorMode.DROPDOWN,
+        # By the translated country name, so the order is alphabetical in
+        # every language.
+        sort=True,
     )
 )
 _TRACKING_COUNTRY_SELECTOR = selector.SelectSelector(
@@ -76,6 +79,9 @@ _TRACKING_COUNTRY_SELECTOR = selector.SelectSelector(
         options=[country.lower() for country in TRACKING_COUNTRIES],
         translation_key=CONF_COUNTRY,
         mode=selector.SelectSelectorMode.DROPDOWN,
+        # By the translated country name, so the order is alphabetical in
+        # every language.
+        sort=True,
     )
 )
 
