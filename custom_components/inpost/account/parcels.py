@@ -148,6 +148,10 @@ STATUS_MAP: dict[str, str] = {
     "stack_in_customer_service_point": ParcelStatus.AT_PICKUP_POINT,
     "pickup_reminder_sent": ParcelStatus.AT_PICKUP_POINT,
     "pickup_reminder_sent_address": ParcelStatus.AT_PICKUP_POINT,
+    # Despite the name, still collectible: a parcel left in a temporary locker
+    # after its storage window keeps statusGroup TO_PICKUP, a valid openCode
+    # and operations.collect, and the app offers it for pickup (seen live).
+    "stack_parcel_in_box_machine_pickup_time_expired": ParcelStatus.AT_PICKUP_POINT,
     # Collected / delivered — terminal "arrived" states, recipient-side only.
     # ``claimed`` is the post-pickup state of a locker parcel, so it sorts
     # with delivered, never mid-transit.
@@ -168,7 +172,6 @@ STATUS_MAP: dict[str, str] = {
     "cancelled": ParcelStatus.PROBLEM,
     "pickup_time_expired": ParcelStatus.PROBLEM,
     "stack_parcel_pickup_time_expired": ParcelStatus.PROBLEM,
-    "stack_parcel_in_box_machine_pickup_time_expired": ParcelStatus.PROBLEM,
     # Live-confirmed 2026-08-15 (real account): a bare "avizo" preceded by
     # ``rejected_by_receiver`` in the parcel's own event log — a delivery
     # attempt the receiver turned away, not a locker-ready state. Distinct

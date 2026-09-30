@@ -392,3 +392,14 @@ def test_payment_event_in_history_has_no_status_and_no_warning(caplog):
     assert entry["status"] is None
     assert entry["raw_status"] == "COD_COMPLETED"
     assert "COD_COMPLETED" not in caplog.text
+
+
+def test_parcel_in_a_temporary_locker_after_its_window_is_still_collectible():
+    raw = ready_sample()
+    raw.update(
+        status="STACK_PARCEL_IN_BOX_MACHINE_PICKUP_TIME_EXPIRED", statusGroup="TO_PICKUP"
+    )
+    parcel = normalize_parcel(raw)
+    assert parcel["status"] is ParcelStatus.AT_PICKUP_POINT
+    assert parcel["pickup"] is True
+
