@@ -52,6 +52,12 @@ CAPABILITIES_BY_VARIANT = {
     "Tracking": frozenset({"url", "history"}),
 }
 
+# Fields not confirmed yet — the docs site shows them as "awaiting data".
+# Move a field into the declaration above once a real parcel shows it.
+PENDING_CAPABILITIES_BY_VARIANT = {
+    "Account (IT)": frozenset({"weight", "dimensions", "pickup_point"}),
+}
+
 # Consumer tracking deep link per country, for a tracking-hub or Italian
 # account parcel's ``url`` field. Each InPost storefront runs its own tracking page — different host,
 # path and query param per country, live-confirmed 2026-08-31. A country
