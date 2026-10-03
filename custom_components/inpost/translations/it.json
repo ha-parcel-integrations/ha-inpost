@@ -18,7 +18,7 @@
       },
       "sign_in": {
         "title": "Accedi a InPost",
-        "description": "Apri questo link in un browser e accedi con il tuo account InPost (numero di telefono e codice SMS):\n\n{authorize_url}\n\nDopo l'accesso la pagina non finirà di caricarsi: è normale. Copia l'indirizzo completo dalla barra degli indirizzi del browser e incollalo qui sotto.",
+        "description": "Apri questo link in un browser e accedi con il tuo account InPost (numero di telefono e codice SMS):\n\n{authorize_url}\n\nInserisci il codice SMS nella pagina di InPost, non qui. Se poi InPost ti chiede di accedere via e-mail e finisci sulla pagina del tuo account InPost, riapri il link qui sopra restando connesso.\n\nDopo l'accesso la pagina non finirà di caricarsi: è normale. Copia l'indirizzo completo dalla barra degli indirizzi del browser e incollalo qui sotto.",
         "data": {
           "callback_url": "URL di callback"
         },

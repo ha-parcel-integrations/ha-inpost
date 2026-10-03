@@ -18,7 +18,7 @@
       },
       "sign_in": {
         "title": "Inloggen bij InPost",
-        "description": "Open deze link in een browser en log in met je InPost-account (telefoonnummer en sms-code):\n\n{authorize_url}\n\nDaarna laadt de pagina niet verder — dat is de bedoeling. Kopieer het volledige adres uit de adresbalk van je browser en plak het hieronder.",
+        "description": "Open deze link in een browser en log in met je InPost-account (telefoonnummer en sms-code):\n\n{authorize_url}\n\nVul de sms-code in op de pagina van InPost, niet hier. Vraagt InPost daarna om in te loggen met e-mail en kom je op de pagina van je InPost-account uit, open dan de link hierboven nog eens terwijl je ingelogd bent.\n\nDaarna laadt de pagina niet verder — dat is de bedoeling. Kopieer het volledige adres uit de adresbalk van je browser en plak het hieronder.",
         "data": {
           "callback_url": "Callback-URL"
         },

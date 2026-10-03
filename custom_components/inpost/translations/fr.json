@@ -18,7 +18,7 @@
       },
       "sign_in": {
         "title": "Se connecter à InPost",
-        "description": "Ouvrez ce lien dans un navigateur et connectez-vous avec votre compte InPost (numéro de téléphone et code SMS) :\n\n{authorize_url}\n\nEnsuite, la page ne finira pas de se charger : c'est normal. Copiez l'adresse complète depuis la barre d'adresse du navigateur et collez-la ci-dessous.",
+        "description": "Ouvrez ce lien dans un navigateur et connectez-vous avec votre compte InPost (numéro de téléphone et code SMS) :\n\n{authorize_url}\n\nSaisissez le code SMS sur la page d'InPost, pas ici. Si InPost vous demande ensuite de vous connecter par e-mail et que vous arrivez sur la page de votre compte InPost, rouvrez le lien ci-dessus en restant connecté.\n\nEnsuite, la page ne finira pas de se charger : c'est normal. Copiez l'adresse complète depuis la barre d'adresse du navigateur et collez-la ci-dessous.",
         "data": {
           "callback_url": "URL de retour"
         },

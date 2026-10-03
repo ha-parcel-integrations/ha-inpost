@@ -18,7 +18,7 @@
       },
       "sign_in": {
         "title": "Iniciar sesión en InPost",
-        "description": "Abre este enlace en un navegador e inicia sesión con tu cuenta de InPost (número de teléfono y código SMS):\n\n{authorize_url}\n\nDespués la página no terminará de cargar; es lo esperado. Copia la dirección completa de la barra de direcciones del navegador y pégala abajo.",
+        "description": "Abre este enlace en un navegador e inicia sesión con tu cuenta de InPost (número de teléfono y código SMS):\n\n{authorize_url}\n\nIntroduce el código SMS en la página de InPost, no aquí. Si después InPost te pide iniciar sesión por correo electrónico y acabas en la página de tu cuenta de InPost, abre de nuevo el enlace de arriba sin cerrar la sesión.\n\nDespués la página no terminará de cargar; es lo esperado. Copia la dirección completa de la barra de direcciones del navegador y pégala abajo.",
         "data": {
           "callback_url": "URL de retorno"
         },

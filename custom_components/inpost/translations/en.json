@@ -18,7 +18,7 @@
       },
       "sign_in": {
         "title": "Sign in to InPost",
-        "description": "Open this link in a browser and sign in with your InPost account (phone number and SMS code):\n\n{authorize_url}\n\nAfterwards the page will not finish loading — that is expected. Copy the full address from your browser's address bar and paste it below.",
+        "description": "Open this link in a browser and sign in with your InPost account (phone number and SMS code):\n\n{authorize_url}\n\nEnter the SMS code on InPost's page, not here. If InPost then asks you to sign in by e-mail and you end up on your InPost account page instead, open the link above again while still signed in.\n\nAfterwards the page will not finish loading — that is expected. Copy the full address from your browser's address bar and paste it below.",
         "data": {
           "callback_url": "Callback URL"
         },

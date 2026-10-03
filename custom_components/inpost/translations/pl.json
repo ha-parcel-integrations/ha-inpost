@@ -18,7 +18,7 @@
       },
       "sign_in": {
         "title": "Zaloguj się do InPost",
-        "description": "Otwórz ten link w przeglądarce i zaloguj się na swoje konto InPost (numer telefonu i kod SMS):\n\n{authorize_url}\n\nPotem strona nie załaduje się do końca — tak ma być. Skopiuj pełny adres z paska adresu przeglądarki i wklej go poniżej.",
+        "description": "Otwórz ten link w przeglądarce i zaloguj się na swoje konto InPost (numer telefonu i kod SMS):\n\n{authorize_url}\n\nKod SMS wpisz na stronie InPost, nie tutaj. Jeśli InPost poprosi potem o zalogowanie e-mailem i trafisz na stronę konta InPost, otwórz ponownie powyższy link, będąc zalogowanym.\n\nPotem strona nie załaduje się do końca — tak ma być. Skopiuj pełny adres z paska adresu przeglądarki i wklej go poniżej.",
         "data": {
           "callback_url": "Adres zwrotny (callback URL)"
         },
