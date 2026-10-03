@@ -98,7 +98,7 @@
     "delivered_filter_type": {
       "options": {
         "days": "Dni",
-        "parcels": "Liczba paczek"
+        "parcels": "Liczba przesyłek"
       }
     },
     "country": {
@@ -157,30 +157,30 @@
     },
     "calendar": {
       "deliveries": {
-        "name": "Doręczenia"
+        "name": "Dostawy"
       }
     },
     "sensor": {
       "incoming_parcels": {
-        "name": "Przychodzące paczki",
-        "unit_of_measurement": "paczki"
+        "name": "Nadchodzące przesyłki",
+        "unit_of_measurement": "przesyłki"
       },
       "next_delivery": {
-        "name": "Następne doręczenie"
+        "name": "Następna dostawa"
       },
       "awaiting_pickup": {
         "name": "Oczekuje na odbiór",
-        "unit_of_measurement": "paczki"
+        "unit_of_measurement": "przesyłki"
       },
       "delivered_parcels": {
-        "name": "Doręczone paczki",
-        "unit_of_measurement": "paczki"
+        "name": "Doręczone przesyłki",
+        "unit_of_measurement": "przesyłki"
       },
       "last_update": {
         "name": "Ostatnia udana aktualizacja"
       },
       "parcel": {
-        "name": "Paczka {barcode}"
+        "name": "Przesyłka {barcode}"
       }
     }
   }
