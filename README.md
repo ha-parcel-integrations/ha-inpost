@@ -12,7 +12,7 @@
 > You sign in, your parcels appear as sensors and events, and a locker parcel
 > shows as `at_pickup_point`. The auth flow, payload shape and happy path are
 > confirmed against a real account; InPost's detailed status string has ~60
-> documented values and only one (`avizo`) has actually been seen on the wire
+> values and only one (`avizo`) has actually been seen on a real parcel
 > so far. An unrecognised one still lands in a sensible bucket rather than
 > breaking — see [How you can help](#how-you-can-help) if you spot one.
 
@@ -87,7 +87,7 @@ That is it — your parcels appear on the next refresh. InPost's sign-in page ne
 
 You can add more than one account (each is a separate phone number), also one per country. For parcels in Portugal, the United Kingdom or Spain, use a tracking-code hub.
 
-**Italian accounts are new.** Signing in and reading the parcel list are confirmed with a real Italian account, but no Italian parcel has been seen yet, so the parcel details are modelled on the InPost app. If the log says an Italian parcel "differs from the shape we modelled", please [share a diagnostics file](#how-you-can-help). Italian parcels show their status, sender, pickup point and history; weight and dimensions follow once a real parcel shows their units.
+**Italian accounts are new.** Signing in and reading the parcel list are confirmed with a real Italian account, but no Italian parcel has been seen yet, so the parcel details are not confirmed yet. If the log says an Italian parcel "differs from the shape we modelled", please [share a diagnostics file](#how-you-can-help). Italian parcels show their status, sender, pickup point and history; weight and dimensions follow once a real parcel shows their units.
 
 **Already set up with an SMS code before this version?** Nothing changes for you: your setup keeps working as it is. The next time InPost asks you to sign in again, you use the new sign-in page, and your sensors and automations stay as they are.
 
