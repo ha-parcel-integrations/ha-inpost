@@ -177,7 +177,7 @@
         "unit_of_measurement": "encomendas"
       },
       "last_update": {
-        "name": "Última atualização bem-sucedida"
+        "name": "Última atualização com sucesso"
       },
       "parcel": {
         "name": "Encomenda {barcode}"
