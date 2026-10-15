@@ -62,7 +62,7 @@
         }
       },
       "parcels": {
-        "title": "Colis suivis",
+        "title": "Gérer les colis",
         "data": {
           "tracking_codes": "Codes de suivi"
         }
