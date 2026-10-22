@@ -34,8 +34,8 @@ class InPostTrackingCoordinator(InPostCoordinator):
         self._raw_cache: dict[str, dict] = {}
 
     async def _async_update_data(self) -> list[dict]:
-        codes = [
-            item.get(CONF_TRACKING_CODE)
+        codes: list[str] = [
+            item[CONF_TRACKING_CODE]
             for item in self.config_entry.options.get(CONF_PARCELS, [])
             if isinstance(item, dict) and item.get(CONF_TRACKING_CODE)
         ]

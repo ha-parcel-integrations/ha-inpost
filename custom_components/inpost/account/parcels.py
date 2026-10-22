@@ -109,7 +109,7 @@ TRACKING_URL = "https://inpost.pl/sledzenie-przesylek?number={tracking_code}"
 
 # Detailed ``status`` string -> ParcelStatus. Lower-case keys; the wire values
 # are lower-case (e.g. ``ready_to_pickup``).
-STATUS_MAP: dict[str, str] = {
+STATUS_MAP: dict[str, ParcelStatus] = {
     # Announced by the sender, not yet in the network.
     "created": ParcelStatus.REGISTERED,
     "confirmed": ParcelStatus.REGISTERED,
@@ -196,7 +196,7 @@ STATUS_MAP: dict[str, str] = {
 # ``claimed``/``other`` from public docs — none of those four have ever been
 # seen on the wire, so they were dropped rather than left as dead weight;
 # re-add one only once a real payload shows it.
-STATUS_GROUP_MAP: dict[str, str] = {
+STATUS_GROUP_MAP: dict[str, ParcelStatus] = {
     "to_send": ParcelStatus.REGISTERED,
     "in_delivery": ParcelStatus.IN_TRANSIT,
     "to_pickup": ParcelStatus.AT_PICKUP_POINT,

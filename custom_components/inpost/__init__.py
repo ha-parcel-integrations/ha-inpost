@@ -68,12 +68,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: InPostConfigEntry) -> bo
             },
         )
 
+    client: InPostApiClient | InPostTrackingApiClient
+    coordinator: InPostCoordinator
     if CONF_COUNTRY in entry.data:
         # Public tracking hubs have no credentials and can never reauthenticate.
-        client = InPostTrackingApiClient(session)
-        coordinator = InPostTrackingCoordinator(hass, client, entry)
+        tracking_client = InPostTrackingApiClient(session)
+        client = tracking_client
+        coordinator = InPostTrackingCoordinator(hass, tracking_client, entry)
     else:
-        client = InPostApiClient(
+        account_client = InPostApiClient(
             session,
             entry.data[CONF_AUTH_TOKEN],
             entry.data[CONF_REFRESH_TOKEN],
@@ -81,7 +84,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: InPostConfigEntry) -> bo
             auth_method=entry.data.get(CONF_AUTH_METHOD, AUTH_METHOD_SMS),
             market=entry.data.get(CONF_MARKET, DEFAULT_ACCOUNT_MARKET),
         )
-        coordinator = InPostCoordinator(hass, client, entry)
+        client = account_client
+        coordinator = InPostCoordinator(hass, account_client, entry)
 
     # Fetch initial data here, before forwarding to platforms. Raising
     # ConfigEntryNotReady from a forwarded platform is too late for HA to catch
