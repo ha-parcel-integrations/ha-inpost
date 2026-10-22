@@ -1,4 +1,5 @@
 """Tests for the public-tracking hub coordinator."""
+
 from unittest.mock import AsyncMock
 
 from pytest_homeassistant_custom_component.common import MockConfigEntry

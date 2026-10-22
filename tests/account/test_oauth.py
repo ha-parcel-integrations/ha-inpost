@@ -1,4 +1,5 @@
 """Tests for the pure InPost Group sign-in helpers."""
+
 import base64
 import hashlib
 from urllib.parse import parse_qs, urlparse
@@ -13,8 +14,7 @@ from custom_components.inpost.account.oauth import (
     is_valid_callback_url,
     parse_callback_url,
 )
-
-from ..tokens import make_jwt
+from tests.tokens import make_jwt
 
 
 def test_pkce_challenge_is_the_s256_of_the_verifier():
@@ -55,7 +55,9 @@ def test_authorization_url_carries_the_app_client_and_chosen_market():
     ],
 )
 def test_authorization_url_language(language, market, expected):
-    query = parse_qs(urlparse(build_authorization_url("c", "s", "n", language, market)).query)
+    query = parse_qs(
+        urlparse(build_authorization_url("c", "s", "n", language, market)).query
+    )
     assert query["lang"] == [expected]
     assert query["supported_markets"] == [market]
 
@@ -80,7 +82,10 @@ def test_parse_callback_url_returns_code_and_state():
     assert parse_callback_url(
         "https://account.inpost-group.com/callback?code=abc&state=xyz"
     ) == ("abc", "xyz")
-    assert parse_callback_url("https://account.inpost-group.com/callback") == (None, None)
+    assert parse_callback_url("https://account.inpost-group.com/callback") == (
+        None,
+        None,
+    )
 
 
 def test_decode_token_claims_reads_the_payload():

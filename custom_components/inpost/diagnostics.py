@@ -1,4 +1,5 @@
 """Diagnostics support for the InPost parcel tracker integration."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -41,7 +42,10 @@ TO_REDACT = {
 }
 
 TRACKING_TO_REDACT = {
-    "barcode", "trackingNumber", "url", "tracking_code",
+    "barcode",
+    "trackingNumber",
+    "url",
+    "tracking_code",
 }
 
 

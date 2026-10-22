@@ -4,6 +4,7 @@ One place, because sensors, the button and the calendar must all land on the
 *same* device entry — and because the device is named per account here, an
 account-based integration can have several.
 """
+
 from __future__ import annotations
 
 from homeassistant.config_entries import ConfigEntry

@@ -25,11 +25,12 @@ Contract the rest of the integration relies on:
 * ``aiohttp.ClientError`` propagates untouched where the coordinator can wrap it
   into ``UpdateFailed``.
 """
+
 from __future__ import annotations
 
 import asyncio
-import logging
 from collections.abc import Callable
+import logging
 from typing import Any
 
 import aiohttp
@@ -139,7 +140,9 @@ async def _async_post_oauth_token(
         _LOGGER.warning(
             "InPost sign-in rejected the token request: HTTP %s (%s)", status, error
         )
-        raise InPostAuthReauthRequired(f"token request HTTP {status}", status_code=status)
+        raise InPostAuthReauthRequired(
+            f"token request HTTP {status}", status_code=status
+        )
     raise InPostApiError(
         f"token request HTTP {status}", status_code=status, retry_after=retry_after
     )
@@ -219,7 +222,9 @@ class InPostApiClient:
             payload = await self._get(it.PARCELS_URL, params)
             parcels.extend(self._parcels_of(payload))
             next_page = payload.get("nextPage")
-            cursor = next_page.get("pagingState") if isinstance(next_page, dict) else None
+            cursor = (
+                next_page.get("pagingState") if isinstance(next_page, dict) else None
+            )
             if not cursor:
                 return parcels
             params = {"role": it.PARCELS_ROLE, "pagingState": cursor}

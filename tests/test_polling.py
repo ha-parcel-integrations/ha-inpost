@@ -1,5 +1,6 @@
 """Tests for InPost's unconditional dynamic polling policy."""
-from datetime import datetime, timedelta, timezone
+
+from datetime import UTC, datetime, timedelta
 
 from custom_components.inpost.account.coordinator import (
     _hottest_tier_minutes,
@@ -14,8 +15,6 @@ from custom_components.inpost.const import (
     STAGGER_MINUTES,
     ParcelStatus,
 )
-
-UTC = timezone.utc
 
 
 def test_quiet_window_and_anchors_use_local_clock():
@@ -33,9 +32,12 @@ def test_stagger_is_stable_and_bounded():
 
 
 def test_account_model_keeps_mid_polling_when_empty():
-    assert _hottest_tier_minutes(
-        [], datetime(2026, 1, 1, 12, tzinfo=UTC), stop_when_empty=False
-    ) == MID_INTERVAL_MINUTES
+    assert (
+        _hottest_tier_minutes(
+            [], datetime(2026, 1, 1, 12, tzinfo=UTC), stop_when_empty=False
+        )
+        == MID_INTERVAL_MINUTES
+    )
 
 
 def test_tracking_model_suspends_when_empty():
@@ -48,11 +50,14 @@ def test_tracking_model_suspends_when_empty():
 
 
 def test_out_for_delivery_without_eta_is_hot():
-    assert _hottest_tier_minutes(
-        [{"status": ParcelStatus.OUT_FOR_DELIVERY, "planned_from": None}],
-        datetime(2026, 1, 1, 12, tzinfo=UTC),
-        stop_when_empty=False,
-    ) == HOT_INTERVAL_MINUTES
+    assert (
+        _hottest_tier_minutes(
+            [{"status": ParcelStatus.OUT_FOR_DELIVERY, "planned_from": None}],
+            datetime(2026, 1, 1, 12, tzinfo=UTC),
+            stop_when_empty=False,
+        )
+        == HOT_INTERVAL_MINUTES
+    )
 
 
 def test_schedule_uses_tier_stagger_and_clamps_to_anchor():
@@ -62,6 +67,6 @@ def test_schedule_uses_tier_stagger_and_clamps_to_anchor():
         minutes=MID_INTERVAL_MINUTES + _stagger_minutes("entry-1")
     )
     late = datetime(2026, 1, 1, 23, 50, tzinfo=UTC)
-    assert late + _next_update_interval(late, MID_INTERVAL_MINUTES, "entry-1") == datetime(
-        2026, 1, 2, tzinfo=UTC
-    )
+    assert late + _next_update_interval(
+        late, MID_INTERVAL_MINUTES, "entry-1"
+    ) == datetime(2026, 1, 2, tzinfo=UTC)

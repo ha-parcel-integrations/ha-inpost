@@ -1,4 +1,5 @@
 """Tests for the InPost config and options flow — the pasted-callback sign-in."""
+
 import json
 from pathlib import Path
 from unittest.mock import AsyncMock, patch
@@ -123,7 +124,9 @@ async def test_callback_without_a_code_is_rejected(hass):
     with patch(EXCHANGE, new=exchange):
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"],
-            {"callback_url": f"https://account.inpost-group.com/callback?state={_state(result)}"},
+            {
+                "callback_url": f"https://account.inpost-group.com/callback?state={_state(result)}"
+            },
         )
     assert result["errors"] == {"base": "invalid_redirect"}
     exchange.assert_not_awaited()
@@ -131,7 +134,9 @@ async def test_callback_without_a_code_is_rejected(hass):
 
 async def test_rejected_code_surfaces_invalid_auth(hass):
     result = await _start(hass)
-    result = await _paste(hass, result, AsyncMock(side_effect=InPostAuthReauthRequired("400")))
+    result = await _paste(
+        hass, result, AsyncMock(side_effect=InPostAuthReauthRequired("400"))
+    )
     assert result["step_id"] == "sign_in"
     assert result["errors"] == {"base": "invalid_auth"}
 
@@ -152,7 +157,9 @@ async def test_an_account_from_another_country_than_chosen_is_refused(hass):
 
 async def test_italian_sign_in_creates_an_italian_entry(hass):
     result = await _start(hass, "it")
-    query = parse_qs(urlparse(result["description_placeholders"]["authorize_url"]).query)
+    query = parse_qs(
+        urlparse(result["description_placeholders"]["authorize_url"]).query
+    )
     assert query["supported_markets"] == ["IT"]
 
     tokens = _tokens(market="IT", phone="3201234567", prefix="+39")
@@ -167,9 +174,10 @@ async def test_italian_sign_in_creates_an_italian_entry(hass):
 
 def test_account_countries_are_translated_in_every_locale():
     translations_dir = Path(__file__).parents[1] / "custom_components/inpost"
-    paths = [translations_dir / "strings.json"] + sorted(
-        (translations_dir / "translations").glob("*.json")
-    )
+    paths = [
+        translations_dir / "strings.json",
+        *sorted((translations_dir / "translations").glob("*.json")),
+    ]
     for path in paths:
         payload = json.loads(path.read_text())
         assert {"pl", "it"} <= set(payload["selector"]["country"]["options"]), path
@@ -182,9 +190,9 @@ async def test_a_token_without_a_phone_is_refused(hass):
 
 
 async def test_account_already_set_up_by_sms_aborts(hass):
-    MockConfigEntry(domain=DOMAIN, unique_id=PHONE, data={CONF_PHONE: PHONE}).add_to_hass(
-        hass
-    )
+    MockConfigEntry(
+        domain=DOMAIN, unique_id=PHONE, data={CONF_PHONE: PHONE}
+    ).add_to_hass(hass)
     result = await _start(hass)
     result = await _paste(hass, result, AsyncMock(return_value=_tokens()))
     assert result["type"] == "abort"
@@ -214,10 +222,19 @@ def test_country_translations_match_supported_tracking_countries():
     """Never offer a translated country that the public route cannot handle."""
     translations_dir = Path(__file__).parents[1] / "custom_components/inpost"
     expected = {country.lower() for country in TRACKING_COUNTRIES}
-    paths = [translations_dir / "strings.json"] + sorted(
-        (translations_dir / "translations").glob("*.json")
-    )
-    assert {path.stem for path in paths[1:]} == {"en", "es", "fr", "it", "nl", "pl", "pt"}
+    paths = [
+        translations_dir / "strings.json",
+        *sorted((translations_dir / "translations").glob("*.json")),
+    ]
+    assert {path.stem for path in paths[1:]} == {
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl",
+        "pl",
+        "pt",
+    }
     for path in paths:
         payload = json.loads(path.read_text())
         assert set(payload["selector"]["country"]["options"]) == expected
@@ -226,9 +243,10 @@ def test_country_translations_match_supported_tracking_countries():
 def test_options_menu_labels_are_translated_in_every_locale():
     """A menu with no menu_options translation renders as blank buttons."""
     translations_dir = Path(__file__).parents[1] / "custom_components/inpost"
-    paths = [translations_dir / "strings.json"] + sorted(
-        (translations_dir / "translations").glob("*.json")
-    )
+    paths = [
+        translations_dir / "strings.json",
+        *sorted((translations_dir / "translations").glob("*.json")),
+    ]
     for path in paths:
         payload = json.loads(path.read_text())
         menu_options = payload["options"]["step"]["init"]["menu_options"]
@@ -361,8 +379,9 @@ async def test_country_dropdowns_sort_by_translated_name(hass):
 def test_translations_contain_no_urls():
     """Hassfest rejects a URL in any string; links go through placeholders."""
     translations_dir = Path(__file__).parents[1] / "custom_components/inpost"
-    paths = [translations_dir / "strings.json"] + sorted(
-        (translations_dir / "translations").glob("*.json")
-    )
+    paths = [
+        translations_dir / "strings.json",
+        *sorted((translations_dir / "translations").glob("*.json")),
+    ]
     for path in paths:
         assert "://" not in path.read_text(), path

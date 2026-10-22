@@ -8,6 +8,7 @@ themselves live in :mod:`.client`, next to the rest of the token lifecycle.
 
 No I/O in this module.
 """
+
 from __future__ import annotations
 
 import base64

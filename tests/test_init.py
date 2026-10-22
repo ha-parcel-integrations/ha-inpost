@@ -1,4 +1,5 @@
 """Tests for InPost setup, unload, token persistence and reauth."""
+
 from unittest.mock import AsyncMock, patch
 
 from homeassistant.config_entries import ConfigEntryState

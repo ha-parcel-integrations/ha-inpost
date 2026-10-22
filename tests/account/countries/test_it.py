@@ -1,4 +1,5 @@
 """Tests for the Italian account inbox normaliser."""
+
 import pytest
 
 from custom_components.inpost.account.countries import it
@@ -37,7 +38,10 @@ def parcel(*events: dict, **extra) -> dict:
     ],
 )
 def test_every_catalogue_status_maps(status, expected):
-    assert it.normalize_parcel(parcel(event(status, "2026-09-30T10:00:00Z")))["status"] is expected
+    assert (
+        it.normalize_parcel(parcel(event(status, "2026-09-30T10:00:00Z")))["status"]
+        is expected
+    )
 
 
 def test_current_status_is_the_newest_event_whatever_the_order():
@@ -52,11 +56,16 @@ def test_current_status_is_the_newest_event_whatever_the_order():
     assert result["raw_status"] == "LMD.1005"
     assert result["pickup"] is True
     assert result["pickup_point"] == "MIL01M"
-    assert [entry["raw_status"] for entry in result["history"]] == ["MMD.1004", "LMD.1005"]
+    assert [entry["raw_status"] for entry in result["history"]] == [
+        "MMD.1004",
+        "LMD.1005",
+    ]
 
 
 def test_delivered_parcel_carries_its_delivery_time():
-    result = it.normalize_parcel(parcel(event("DELIVERED", "2026-09-30T15:00:00Z", "EOL.1001")))
+    result = it.normalize_parcel(
+        parcel(event("DELIVERED", "2026-09-30T15:00:00Z", "EOL.1001"))
+    )
     assert result["delivered"] is True
     assert result["delivered_at"] == "2026-09-30T15:00:00Z"
 

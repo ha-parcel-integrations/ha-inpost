@@ -6,14 +6,14 @@ flow shows the sign-in link, the user completes it in their own browser and
 pastes back the callback URL it lands on, and that code is exchanged for the
 token pair the integration stores. Setup and reauth share the same step.
 """
+
 from __future__ import annotations
 
-import logging
 from collections.abc import Mapping
+import logging
 from typing import Any
 
 import aiohttp
-import voluptuous as vol
 from homeassistant.config_entries import (
     ConfigEntry,
     ConfigFlow,
@@ -24,6 +24,7 @@ from homeassistant.core import callback
 from homeassistant.data_entry_flow import section
 from homeassistant.helpers import selector
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+import voluptuous as vol
 
 from .account.client import (
     InPostApiError,
@@ -341,9 +342,11 @@ class InPostOptionsFlowHandler(OptionsFlow):
             step_id="parcels",
             data_schema=self.add_suggested_values_to_schema(
                 vol.Schema(
-                    {vol.Optional("tracking_codes"): selector.TextSelector(
-                        selector.TextSelectorConfig(multiple=True)
-                    )}
+                    {
+                        vol.Optional("tracking_codes"): selector.TextSelector(
+                            selector.TextSelectorConfig(multiple=True)
+                        )
+                    }
                 ),
                 {"tracking_codes": current_codes},
             ),

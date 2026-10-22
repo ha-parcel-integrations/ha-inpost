@@ -1,4 +1,5 @@
 """Tests for the InPost account client — sign-in, both token kinds and refresh."""
+
 from unittest.mock import AsyncMock, MagicMock
 
 import aiohttp
@@ -11,9 +12,8 @@ from custom_components.inpost.account.client import (
     async_exchange_code,
 )
 from custom_components.inpost.const import AUTH_METHOD_SSO
-
-from ..payloads import ACTIVE_CODE, ready_sample, response
-from ..sessions import fake_session as _session
+from tests.payloads import ACTIVE_CODE, ready_sample, response
+from tests.sessions import fake_session as _session
 
 # ---------------------------------------------------------------------------
 # authenticated client
@@ -50,7 +50,10 @@ async def test_401_triggers_refresh_then_retry():
     )
     persisted = []
     client = InPostApiClient(
-        session, "acc-1", "ref-1", on_tokens_updated=lambda a, r: persisted.append((a, r))
+        session,
+        "acc-1",
+        "ref-1",
+        on_tokens_updated=lambda a, r: persisted.append((a, r)),
     )
 
     parcels = await client.async_get_parcels()
@@ -70,7 +73,10 @@ async def test_refresh_keeps_old_refresh_token_when_response_omits_it():
     )
     persisted = []
     client = InPostApiClient(
-        session, "acc-1", "ref-1", on_tokens_updated=lambda a, r: persisted.append((a, r))
+        session,
+        "acc-1",
+        "ref-1",
+        on_tokens_updated=lambda a, r: persisted.append((a, r)),
     )
 
     parcels = await client.async_get_parcels()
@@ -194,7 +200,9 @@ async def test_exchange_code_transport_error_is_transient():
 
 
 def _sso_client(session, **kwargs) -> InPostApiClient:
-    return InPostApiClient(session, "acc-1", "ref-1", auth_method=AUTH_METHOD_SSO, **kwargs)
+    return InPostApiClient(
+        session, "acc-1", "ref-1", auth_method=AUTH_METHOD_SSO, **kwargs
+    )
 
 
 async def test_sign_in_token_is_sent_as_bearer():
@@ -210,10 +218,15 @@ async def test_sign_in_401_refreshes_at_the_identity_provider():
         (200, response(ready_sample())),
     )
     persisted = []
-    client = _sso_client(session, on_tokens_updated=lambda a, r: persisted.append((a, r)))
+    client = _sso_client(
+        session, on_tokens_updated=lambda a, r: persisted.append((a, r))
+    )
 
     assert len(await client.async_get_parcels()) == 1
-    assert session.post.call_args.args[0] == "https://account.inpost-group.com/oauth2/token"
+    assert (
+        session.post.call_args.args[0]
+        == "https://account.inpost-group.com/oauth2/token"
+    )
     assert session.post.call_args.kwargs["data"] == {
         "grant_type": "refresh_token",
         "client_id": "inpost-mobile",
@@ -263,7 +276,13 @@ async def test_sign_in_refresh_rate_limited_is_transient_with_retry_after():
 
 async def test_italian_inbox_follows_the_cursor_pages():
     session = _session(
-        (200, {"parcels": [{"primaryParcelNumber": "A"}], "nextPage": {"pagingState": "p2"}}),
+        (
+            200,
+            {
+                "parcels": [{"primaryParcelNumber": "A"}],
+                "nextPage": {"pagingState": "p2"},
+            },
+        ),
         (200, {"parcels": [{"primaryParcelNumber": "B"}, "junk"], "nextPage": None}),
     )
     client = _sso_client(session, market="IT")
@@ -280,4 +299,3 @@ async def test_italian_inbox_stops_at_the_page_cap(caplog):
     await _sso_client(session, market="IT").async_get_parcels()
     assert session.get.call_count == 10
     assert "more than 10 pages" in caplog.text
-

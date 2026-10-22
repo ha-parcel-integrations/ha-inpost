@@ -1,8 +1,9 @@
 """Coordinator for a public-tracking hub: one country, explicit codes."""
+
 from __future__ import annotations
 
 import asyncio
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -54,12 +55,15 @@ class InPostTrackingCoordinator(InPostCoordinator):
 
         try:
             fetched = await asyncio.gather(
-                *(self._tracking_client.async_get_parcel(code) for code in codes_to_fetch)
+                *(
+                    self._tracking_client.async_get_parcel(code)
+                    for code in codes_to_fetch
+                )
             )
         except InPostApiError as err:
             self._handle_api_error(err)
 
-        raws_by_code: dict[str, dict] = dict(zip(codes_to_fetch, fetched))
+        raws_by_code: dict[str, dict] = dict(zip(codes_to_fetch, fetched, strict=True))
         for code, raw in raws_by_code.items():
             self._raw_cache[code] = raw
 
@@ -86,7 +90,9 @@ class InPostTrackingCoordinator(InPostCoordinator):
         # flipped to delivered is skipped starting next cycle; one that
         # somehow un-delivers (should not happen, but the fetch list must
         # never permanently drop a code) rejoins it automatically.
-        self._delivered_codes = {code for code, parcel in entries if parcel["delivered"]}
+        self._delivered_codes = {
+            code for code, parcel in entries if parcel["delivered"]
+        }
         self.delivered = apply_delivered_filter(
             sort_parcels_by_ts(delivered, "delivered_at", descending=True),
             self.config_entry,
@@ -104,7 +110,7 @@ class InPostTrackingCoordinator(InPostCoordinator):
             for parcel in incoming
             if parcel.get("barcode")
         }
-        self.last_success_time = datetime.now(timezone.utc)
+        self.last_success_time = datetime.now(UTC)
         self._consecutive_429 = 0
         self._set_dynamic_interval(normalized_active, stop_when_empty=True)
         return normalized_active

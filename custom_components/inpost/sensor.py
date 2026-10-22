@@ -1,8 +1,9 @@
 """Sensor platform for the InPost parcel tracker integration."""
+
 from __future__ import annotations
 
-import logging
 from datetime import datetime
+import logging
 from typing import Any
 
 from homeassistant.components.sensor import (
@@ -30,7 +31,6 @@ _LOGGER = logging.getLogger(__name__)
 PARALLEL_UPDATES = 0
 
 
-
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: InPostConfigEntry,
@@ -42,9 +42,7 @@ async def async_setup_entry(
     # than (too late) from this forwarded platform.
     coordinator = entry.runtime_data.coordinator
 
-    current_barcodes: set[str] = {
-        p.get("barcode", "") for p in coordinator.data or []
-    }
+    current_barcodes: set[str] = {p.get("barcode", "") for p in coordinator.data or []}
     entry_id = entry.entry_id
 
     # Remove per-parcel sensors from the registry whose barcode is no longer
@@ -65,7 +63,7 @@ async def async_setup_entry(
             and entity_entry.unique_id.startswith(f"{entry_id}_")
             and entity_entry.unique_id not in non_parcel_unique_ids
         ):
-            barcode = entity_entry.unique_id[len(f"{entry_id}_"):]
+            barcode = entity_entry.unique_id[len(f"{entry_id}_") :]
             if barcode not in current_barcodes:
                 registry.async_remove(entity_entry.entity_id)
 
@@ -74,10 +72,10 @@ async def async_setup_entry(
             coordinator, entry, async_add_entities, current_barcodes
         ),
     ]
-    for parcel in coordinator.data or []:
-        entities.append(
-            InPostParcelSensor(coordinator, entry, parcel.get("barcode", ""))
-        )
+    entities.extend(
+        InPostParcelSensor(coordinator, entry, parcel.get("barcode", ""))
+        for parcel in coordinator.data or []
+    )
     entities.append(InPostNextDeliverySensor(coordinator, entry))
     entities.append(InPostAwaitingPickupSensor(coordinator, entry))
     entities.append(InPostDeliveredParcelsSensor(coordinator, entry))
@@ -86,9 +84,7 @@ async def async_setup_entry(
     async_add_entities(entities)
 
 
-class InPostIncomingParcelsSensor(
-    CoordinatorEntity[InPostCoordinator], SensorEntity
-):
+class InPostIncomingParcelsSensor(CoordinatorEntity[InPostCoordinator], SensorEntity):
     """Summary sensor: count of active (not-yet-delivered) tracked parcels.
 
     Spawns a per-parcel sensor for each new barcode and removes stale ones
@@ -191,9 +187,7 @@ class InPostParcelSensor(CoordinatorEntity[InPostCoordinator], SensorEntity):
         return dict(parcel) if parcel else {}
 
 
-class InPostNextDeliverySensor(
-    CoordinatorEntity[InPostCoordinator], SensorEntity
-):
+class InPostNextDeliverySensor(CoordinatorEntity[InPostCoordinator], SensorEntity):
     """Earliest expected delivery datetime across all active parcels."""
 
     _attr_has_entity_name = True
@@ -201,9 +195,7 @@ class InPostNextDeliverySensor(
     _attr_device_class = SensorDeviceClass.TIMESTAMP
     _attr_attribution = ATTRIBUTION
 
-    def __init__(
-        self, coordinator: InPostCoordinator, entry: ConfigEntry
-    ) -> None:
+    def __init__(self, coordinator: InPostCoordinator, entry: ConfigEntry) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator)
         self._attr_unique_id = f"{entry.entry_id}_next_delivery"
@@ -242,9 +234,7 @@ class InPostNextDeliverySensor(
         }
 
 
-class InPostAwaitingPickupSensor(
-    CoordinatorEntity[InPostCoordinator], SensorEntity
-):
+class InPostAwaitingPickupSensor(CoordinatorEntity[InPostCoordinator], SensorEntity):
     """Parcels ready to collect right now — waiting in a Paczkomat or point.
 
     Filters on the canonical ``status`` alone, not the carrier-specific
@@ -260,9 +250,7 @@ class InPostAwaitingPickupSensor(
     _attr_attribution = ATTRIBUTION
     _unrecorded_attributes = frozenset({"parcels"})
 
-    def __init__(
-        self, coordinator: InPostCoordinator, entry: ConfigEntry
-    ) -> None:
+    def __init__(self, coordinator: InPostCoordinator, entry: ConfigEntry) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator)
         self._attr_unique_id = f"{entry.entry_id}_awaiting_pickup"
@@ -286,9 +274,7 @@ class InPostAwaitingPickupSensor(
         return {"parcels": self._awaiting_parcels()}
 
 
-class InPostDeliveredParcelsSensor(
-    CoordinatorEntity[InPostCoordinator], SensorEntity
-):
+class InPostDeliveredParcelsSensor(CoordinatorEntity[InPostCoordinator], SensorEntity):
     """Recently delivered tracked InPost parcels."""
 
     _attr_has_entity_name = True
@@ -297,9 +283,7 @@ class InPostDeliveredParcelsSensor(
     _attr_attribution = ATTRIBUTION
     _unrecorded_attributes = frozenset({"parcels"})
 
-    def __init__(
-        self, coordinator: InPostCoordinator, entry: ConfigEntry
-    ) -> None:
+    def __init__(self, coordinator: InPostCoordinator, entry: ConfigEntry) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator)
         self._attr_unique_id = f"{entry.entry_id}_delivered_parcels"
@@ -316,9 +300,7 @@ class InPostDeliveredParcelsSensor(
         return {"parcels": self.coordinator.delivered}
 
 
-class InPostLastUpdateSensor(
-    CoordinatorEntity[InPostCoordinator], SensorEntity
-):
+class InPostLastUpdateSensor(CoordinatorEntity[InPostCoordinator], SensorEntity):
     """Diagnostic sensor reporting when InPost was last polled successfully."""
 
     _attr_has_entity_name = True
@@ -327,9 +309,7 @@ class InPostLastUpdateSensor(
     _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_attribution = ATTRIBUTION
 
-    def __init__(
-        self, coordinator: InPostCoordinator, entry: ConfigEntry
-    ) -> None:
+    def __init__(self, coordinator: InPostCoordinator, entry: ConfigEntry) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator)
         self._attr_unique_id = f"{entry.entry_id}_last_update"

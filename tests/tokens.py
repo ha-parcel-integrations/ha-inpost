@@ -1,4 +1,5 @@
 """Unsigned JWTs for tests that read an InPost sign-in token's claims."""
+
 import base64
 import json
 

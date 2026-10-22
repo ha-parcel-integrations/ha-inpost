@@ -1,4 +1,5 @@
 """Tests for InPost diagnostics redaction."""
+
 from unittest.mock import MagicMock
 
 from custom_components.inpost.account.parcels import normalize_parcel

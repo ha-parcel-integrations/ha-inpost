@@ -6,11 +6,12 @@ token under the hood, and only a dead session (refresh failed) surfaces here as
 a reauth. InPost exposes no delivery ETA, so the delivery-time event never
 fires — it is kept for contract parity, harmlessly inert.
 """
+
 from __future__ import annotations
 
+from datetime import UTC, datetime, timedelta
 import hashlib
 import logging
-from datetime import datetime, timedelta, timezone
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -89,9 +90,7 @@ def _next_update_interval(
         return None
     if _in_quiet_window(now):
         return _next_anchor(now) - now
-    candidate = now + timedelta(
-        minutes=tier_minutes + _stagger_minutes(entry_id)
-    )
+    candidate = now + timedelta(minutes=tier_minutes + _stagger_minutes(entry_id))
     if _in_quiet_window(candidate):
         return _next_anchor(now) - now
     return candidate - now
@@ -133,9 +132,9 @@ class InPostCoordinator(DataUpdateCoordinator[list[dict]]):
         # that already existed when the integration started — otherwise every
         # restart would flood users with "registered" notifications.
         self._known_state: dict[str, ParcelStatus] | None = None
-        self._known_delivery_times: (
-            dict[str, tuple[str | None, str | None]] | None
-        ) = None
+        self._known_delivery_times: dict[str, tuple[str | None, str | None]] | None = (
+            None
+        )
         # Cached device id, attached to every fired event so device-trigger
         # automations can filter to this account's device.
         self._cached_device_id: str | None = None
@@ -209,9 +208,7 @@ class InPostCoordinator(DataUpdateCoordinator[list[dict]]):
     def _include_history(self) -> bool:
         """Whether the opt-in per-parcel history option is enabled."""
         return bool(
-            self.config_entry.options.get(
-                CONF_INCLUDE_HISTORY, DEFAULT_INCLUDE_HISTORY
-            )
+            self.config_entry.options.get(CONF_INCLUDE_HISTORY, DEFAULT_INCLUDE_HISTORY)
         )
 
     async def _async_update_data(self) -> list[dict]:
@@ -257,7 +254,7 @@ class InPostCoordinator(DataUpdateCoordinator[list[dict]]):
             if parcel.get("barcode")
         }
 
-        self.last_success_time = datetime.now(timezone.utc)
+        self.last_success_time = datetime.now(UTC)
         self._consecutive_429 = 0
         self._set_dynamic_interval(normalized_active, stop_when_empty=False)
         return normalized_active

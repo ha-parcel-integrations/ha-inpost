@@ -1,4 +1,5 @@
 """A fake aiohttp session shared by the client tests."""
+
 from unittest.mock import AsyncMock, MagicMock
 
 

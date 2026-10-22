@@ -4,10 +4,11 @@ Structurally independent from the account inbox: its own payload, its own
 status vocabulary, its own one-shot warnings. Only the suite-wide helpers
 (timestamps, the issue link) are shared with :mod:`..account.parcels`.
 """
+
 from __future__ import annotations
 
-import logging
 from datetime import datetime
+import logging
 
 from ..account.parcels import NEW_ISSUE_URL, parse_iso, to_iso_timestamp
 from ..const import HISTORY_MAX_EVENTS, TRACKING_URL_BY_COUNTRY, ParcelStatus
@@ -46,8 +47,14 @@ TRACKING_STATUS_MAP: dict[str, str] = {
 }
 _unmapped_tracking_statuses_logged: set[str] = set()
 _TRACKING_KNOWN_PAYLOAD_KEYS = {
-    "trackingNumber", "updatedAt", "status", "statusTitle", "statusDescription",
-    "origin", "destination", "trackingDetails",
+    "trackingNumber",
+    "updatedAt",
+    "status",
+    "statusTitle",
+    "statusDescription",
+    "origin",
+    "destination",
+    "trackingDetails",
 }
 _tracking_payload_shape_logged = False
 
@@ -67,7 +74,7 @@ def _warn_unmapped_tracking_status(code: str) -> None:
 
 def _note_tracking_payload_shape(raw: dict) -> None:
     """One-shot warning for public tracking fields not yet in its schema."""
-    global _tracking_payload_shape_logged
+    global _tracking_payload_shape_logged  # noqa: PLW0603 -- one-shot warning flag, module-level by design
     if _tracking_payload_shape_logged:
         return
     extra = sorted(set(raw) - _TRACKING_KNOWN_PAYLOAD_KEYS)
@@ -145,11 +152,16 @@ def normalize_tracking_parcel(
                 unparseable.append(event)
             else:
                 ordered.append((parsed, event))
-                if canonical_status is ParcelStatus.DELIVERED and event_status is ParcelStatus.DELIVERED:
+                if (
+                    canonical_status is ParcelStatus.DELIVERED
+                    and event_status is ParcelStatus.DELIVERED
+                ):
                     delivered_at = timestamp
         ordered.sort(key=lambda item: item[0])
         if include_history:
-            history = ([event for _, event in ordered] + unparseable)[-HISTORY_MAX_EVENTS:]
+            history = ([event for _, event in ordered] + unparseable)[
+                -HISTORY_MAX_EVENTS:
+            ]
     delivered = canonical_status is ParcelStatus.DELIVERED
     return {
         "carrier": "InPost",

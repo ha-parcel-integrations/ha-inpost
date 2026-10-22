@@ -1,4 +1,5 @@
 """Tests for the InPost refresh button."""
+
 from unittest.mock import AsyncMock, MagicMock
 
 from custom_components.inpost.button import InPostRefreshButton

@@ -1,11 +1,12 @@
 """Services for country-scoped, keyless InPost tracking hubs."""
+
 from __future__ import annotations
 
-import voluptuous as vol
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers import config_validation as cv
+import voluptuous as vol
 
 from .const import CONF_COUNTRY, CONF_PARCELS, CONF_TRACKING_CODE, DOMAIN
 
@@ -56,7 +57,9 @@ def async_setup_services(hass: HomeAssistant) -> None:
             )
 
     hass.services.async_register(DOMAIN, SERVICE_TRACK_PARCEL, _track, schema=_SCHEMA)
-    hass.services.async_register(DOMAIN, SERVICE_UNTRACK_PARCEL, _untrack, schema=_SCHEMA)
+    hass.services.async_register(
+        DOMAIN, SERVICE_UNTRACK_PARCEL, _untrack, schema=_SCHEMA
+    )
 
 
 def async_unload_services(hass: HomeAssistant, unloading_entry: ConfigEntry) -> None:

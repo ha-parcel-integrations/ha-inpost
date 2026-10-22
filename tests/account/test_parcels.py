@@ -3,7 +3,8 @@
 No Home Assistant instance needed — the point of keeping ``parcels.py`` free of
 I/O is that the InPost-specific mapping can be tested as plain functions.
 """
-from datetime import datetime, timedelta, timezone
+
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
@@ -25,8 +26,7 @@ from custom_components.inpost.const import (
     KNOWN_CAPABILITIES,
     ParcelStatus,
 )
-
-from ..payloads import (
+from tests.payloads import (
     ACTIVE_CODE,
     delivered_sample,
     in_transit_sample,
@@ -39,7 +39,7 @@ from ..payloads import (
 
 
 @pytest.mark.parametrize(
-    "status,expected",
+    ("status", "expected"),
     [
         ("created", ParcelStatus.REGISTERED),
         ("adopted_at_sorting_center", ParcelStatus.IN_TRANSIT),
@@ -117,7 +117,9 @@ def test_payload_shape_warns_once_for_unconfirmed_fields(caplog):
 def test_payload_shape_silent_for_known_fields(caplog):
     """The modelled field set logs nothing."""
     parcels_module._payload_shape_logged = False
-    normalize_parcel({"shipmentNumber": "6200000000000000000000", "status": "delivered"})
+    normalize_parcel(
+        {"shipmentNumber": "6200000000000000000000", "status": "delivered"}
+    )
     assert "have not confirmed against a real" not in caplog.text
 
 
@@ -211,7 +213,6 @@ def test_account_capabilities_match_what_normalize_parcel_actually_returns():
         assert delivered["url"] is not None
     if "history" in capabilities:
         assert with_history["history"] is not None
-
 
 
 def test_normalize_ready_parcel_is_a_pickup():
@@ -322,7 +323,7 @@ def _entry(filter_type: str, amount: int) -> MockConfigEntry:
 
 
 def _delivered_pair() -> list[dict]:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     return [
         {"barcode": "RECENT", "delivered_at": (now - timedelta(days=1)).isoformat()},
         {"barcode": "OLD", "delivered_at": (now - timedelta(days=30)).isoformat()},
@@ -346,7 +347,7 @@ def test_delivered_filter_keeps_unparseable_timestamp():
 
 def test_parse_iso_handles_zone_naive_and_garbage():
     assert parse_iso("2026-04-30T18:22:00+02:00").tzinfo is not None
-    assert parse_iso("2026-04-30T18:22:00").tzinfo == timezone.utc
+    assert parse_iso("2026-04-30T18:22:00").tzinfo == UTC
     assert parse_iso("nope") is None
     assert parse_iso(None) is None
 
@@ -397,9 +398,9 @@ def test_payment_event_in_history_has_no_status_and_no_warning(caplog):
 def test_parcel_in_a_temporary_locker_after_its_window_is_still_collectible():
     raw = ready_sample()
     raw.update(
-        status="STACK_PARCEL_IN_BOX_MACHINE_PICKUP_TIME_EXPIRED", statusGroup="TO_PICKUP"
+        status="STACK_PARCEL_IN_BOX_MACHINE_PICKUP_TIME_EXPIRED",
+        statusGroup="TO_PICKUP",
     )
     parcel = normalize_parcel(raw)
     assert parcel["status"] is ParcelStatus.AT_PICKUP_POINT
     assert parcel["pickup"] is True
-

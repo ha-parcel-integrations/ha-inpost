@@ -1,4 +1,5 @@
 """Keyless client for InPost's public one-parcel tracking surface."""
+
 from __future__ import annotations
 
 from typing import Any

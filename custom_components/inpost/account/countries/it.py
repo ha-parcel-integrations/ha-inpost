@@ -6,10 +6,11 @@ and the parcel list are live-confirmed; the per-parcel shape is modelled on
 the InPost app and not yet seen with a real parcel, so every guess below
 reports itself once when a payload disagrees.
 """
+
 from __future__ import annotations
 
-import logging
 from datetime import datetime
+import logging
 from typing import Any
 
 from ...const import HISTORY_MAX_EVENTS, TRACKING_URL_BY_COUNTRY, ParcelStatus
@@ -54,7 +55,7 @@ _unmapped_statuses_logged: set[str] = set()
 
 def _note_payload_shape(raw: dict) -> None:
     """One-shot: report an Italian parcel that does not look like the model."""
-    global _payload_shape_logged
+    global _payload_shape_logged  # noqa: PLW0603 -- one-shot warning flag, module-level by design
     if _payload_shape_logged:
         return
     extra = sorted(set(raw) - _KNOWN_PAYLOAD_KEYS)
@@ -115,7 +116,9 @@ def _pickup_point_name(pick_up: Any) -> str | None:
 def _ordered_events(raw: dict) -> list[tuple[datetime | None, dict]]:
     """Return the events oldest first; undated ones sort before the rest."""
     events = [event for event in raw.get("events") or [] if isinstance(event, dict)]
-    dated = [(parse_iso(to_iso_timestamp(event.get("eventTime"))), event) for event in events]
+    dated = [
+        (parse_iso(to_iso_timestamp(event.get("eventTime"))), event) for event in events
+    ]
     return sorted(
         dated, key=lambda item: (item[0] is not None, item[0] or datetime.min)
     )

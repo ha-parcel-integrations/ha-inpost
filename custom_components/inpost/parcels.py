@@ -1,4 +1,5 @@
 """Compatibility imports for the two InPost normalisers."""
+
 from .account.parcels import (
     apply_delivered_filter,
     build_history,

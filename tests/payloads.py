@@ -4,6 +4,7 @@ Modelled on InPost's documented ``TrackedParcelNetwork`` shape and the app's
 auth responses, cross-checked 2026-08-15 against a real account's response
 (``eventLog`` shape, the ``avizo`` status) — see ``carrier-research/inpost.md``.
 """
+
 from __future__ import annotations
 
 ACTIVE_CODE = "630400123456789012345678"
@@ -37,7 +38,11 @@ def ready_sample(code: str = ACTIVE_CODE) -> dict:
         "pickUpPoint": {
             "name": "KRA010",
             "locationDescription": "Przy sklepie Żabka",
-            "addressDetails": {"city": "Kraków", "street": "Floriańska", "postCode": "31-019"},
+            "addressDetails": {
+                "city": "Kraków",
+                "street": "Floriańska",
+                "postCode": "31-019",
+            },
         },
         "operations": {"collect": True},
         "eventLog": [

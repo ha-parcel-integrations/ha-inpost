@@ -1,10 +1,10 @@
 """Tests for the keyless public-tracking client."""
+
 import pytest
 
 from custom_components.inpost.account.client import InPostApiError
 from custom_components.inpost.tracking.client import InPostTrackingApiClient
-
-from ..sessions import fake_session as _session
+from tests.sessions import fake_session as _session
 
 
 async def test_public_tracking_client_requests_keyless_endpoint():

@@ -1,9 +1,10 @@
 """Tests for the account coordinator: fetching, splitting and events."""
+
 from unittest.mock import AsyncMock
 
-import pytest
 from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.update_coordinator import UpdateFailed
+import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.inpost.account.client import (
@@ -17,8 +18,7 @@ from custom_components.inpost.const import (
     DOMAIN,
     ParcelStatus,
 )
-
-from ..payloads import (
+from tests.payloads import (
     ACTIVE_CODE,
     delivered_sample,
     in_transit_sample,
@@ -131,9 +131,7 @@ async def test_status_change_fires_status_changed(hass):
     client = _client(in_transit_sample())
     coordinator = _coordinator(hass, client)
     events = []
-    hass.bus.async_listen(
-        f"{DOMAIN}_parcel_status_changed", lambda e: events.append(e)
-    )
+    hass.bus.async_listen(f"{DOMAIN}_parcel_status_changed", lambda e: events.append(e))
 
     await coordinator._async_update_data()  # first: suppressed
     client.async_get_parcels.return_value = [ready_sample()]
@@ -217,16 +215,26 @@ async def test_italian_account_uses_the_italian_normaliser(hass):
         domain=DOMAIN,
         title="3201234567",
         unique_id="3201234567",
-        data={"phone": "3201234567", "market": "IT", "auth_token": "a", "refresh_token": "r"},
+        data={
+            "phone": "3201234567",
+            "market": "IT",
+            "auth_token": "a",
+            "refresh_token": "r",
+        },
     )
     entry.add_to_hass(hass)
     client = _client(
         {
             "primaryParcelNumber": "IT1",
-            "events": [{"eventCode": "LMD.1005", "eventTime": "2026-09-30T10:00:00Z", "status": "AWAITING_COLLECTION"}],
+            "events": [
+                {
+                    "eventCode": "LMD.1005",
+                    "eventTime": "2026-09-30T10:00:00Z",
+                    "status": "AWAITING_COLLECTION",
+                }
+            ],
         }
     )
     data = await InPostCoordinator(hass, client, entry)._async_update_data()
     assert data[0]["barcode"] == "IT1"
     assert data[0]["status"] == ParcelStatus.AT_PICKUP_POINT
-

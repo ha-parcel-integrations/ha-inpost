@@ -1,4 +1,5 @@
 """Tests for the public-tracking normaliser."""
+
 import pytest
 
 from custom_components.inpost.const import CAPABILITIES_BY_VARIANT, ParcelStatus
@@ -54,7 +55,6 @@ def test_public_tracking_statuses_map_from_live_observations(code, expected):
         {"trackingNumber": "REDACTED", "status": code, "trackingDetails": []}
     )
     assert parcel["status"] is expected
-
 
 
 def test_tracking_capabilities_match_what_normalize_tracking_parcel_returns():

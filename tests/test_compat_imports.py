@@ -5,13 +5,18 @@ shims when the two sources were split into `account/` and `tracking/`.
 Nothing in this repo imports them any more, so only a test notices if a rename
 quietly breaks a user's automation or an external import.
 """
+
 from custom_components.inpost import api, coordinator, parcels
-from custom_components.inpost.account import client as account_client
-from custom_components.inpost.account import coordinator as account_coordinator
-from custom_components.inpost.account import parcels as account_parcels
-from custom_components.inpost.tracking import client as tracking_client
-from custom_components.inpost.tracking import coordinator as tracking_coordinator
-from custom_components.inpost.tracking import parcels as tracking_parcels
+from custom_components.inpost.account import (
+    client as account_client,
+    coordinator as account_coordinator,
+    parcels as account_parcels,
+)
+from custom_components.inpost.tracking import (
+    client as tracking_client,
+    coordinator as tracking_coordinator,
+    parcels as tracking_parcels,
+)
 
 
 def test_root_api_module_re_exports_both_clients():
@@ -40,5 +45,7 @@ def test_root_parcels_module_re_exports_both_normalisers():
         "to_iso_timestamp",
     ):
         assert getattr(parcels, name) is getattr(account_parcels, name), name
-    assert parcels.normalize_tracking_parcel is tracking_parcels.normalize_tracking_parcel
+    assert (
+        parcels.normalize_tracking_parcel is tracking_parcels.normalize_tracking_parcel
+    )
     assert parcels.tracking_hub_url is tracking_parcels.tracking_hub_url

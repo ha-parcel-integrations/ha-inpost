@@ -1,8 +1,9 @@
 """InPost parcel tracker custom component for Home Assistant."""
+
 from __future__ import annotations
 
-import logging
 from dataclasses import dataclass
+import logging
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
@@ -94,7 +95,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: InPostConfigEntry) -> bo
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
     if CONF_COUNTRY in entry.data:
-        entry.async_on_unload(entry.add_update_listener(_async_tracking_options_updated))
+        entry.async_on_unload(
+            entry.add_update_listener(_async_tracking_options_updated)
+        )
         async_setup_services(hass)
 
     # No entry.add_update_listener: the options flow calls async_schedule_reload

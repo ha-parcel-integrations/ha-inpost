@@ -1,6 +1,7 @@
 """Tests for the public-tracking hub's track/untrack services."""
-import pytest
+
 from homeassistant.exceptions import ServiceValidationError
+import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.inpost.const import (
