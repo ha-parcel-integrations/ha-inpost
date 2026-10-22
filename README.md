@@ -62,7 +62,11 @@ What makes InPost worth its own integration is the **locker**: a parcel waiting 
 ### HACS (recommended)
 
 1. Open HACS and search for **InPost**.
-2. Install it and restart Home Assistant.
+2. Install it and restart Home Assistant if HACS asks you to.
+
+Or click the button below to open it directly in HACS:
+
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=ha-parcel-integrations&repository=ha-inpost&category=integration)
 
 ### Manual
 
@@ -70,7 +74,9 @@ Copy `custom_components/inpost` into your `config/custom_components/` folder and
 
 ## Configuration
 
-Add the integration via **Settings → Devices & Services → Add Integration → InPost**, then choose one of these paths:
+[![Open your Home Assistant instance and start setting up a new integration.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=inpost)
+
+Or set it up by hand: add the integration via **Settings → Devices & Services → Add Integration → InPost**, then choose one of these paths:
 
 - **Account (auto-import):** choose the country your account is registered in (Poland or Italy), then sign in on InPost's own page and paste back the address it lands on.
 - **Tracking codes:** select the delivery market (PL, IT, PT, GB or ES), then add tracking codes through **Configure** or the services below. Create another hub for a different market when needed.
