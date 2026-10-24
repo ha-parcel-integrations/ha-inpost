@@ -1,7 +1,9 @@
 """Tests for the public-tracking hub coordinator."""
 
-from unittest.mock import AsyncMock
+from datetime import UTC, datetime, timedelta
+from unittest.mock import AsyncMock, patch
 
+import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.inpost.const import (
@@ -9,6 +11,8 @@ from custom_components.inpost.const import (
     CONF_PARCELS,
     CONF_TRACKING_CODE,
     DOMAIN,
+    MID_INTERVAL_MINUTES,
+    STAGGER_MINUTES,
 )
 from custom_components.inpost.tracking.coordinator import InPostTrackingCoordinator
 
@@ -89,3 +93,32 @@ async def test_tracking_delivered_code_forgotten_when_untracked(hass):
     hass.config_entries.async_update_entry(entry, options={CONF_PARCELS: []})
     await coordinator._async_update_data()
     assert coordinator.delivered_codes == set()
+
+
+async def test_failed_poll_drops_the_overnight_interval(hass):
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title="InPost (IT tracking)",
+        unique_id="IT",
+        data={CONF_COUNTRY: "IT"},
+        options={CONF_PARCELS: [{CONF_TRACKING_CODE: "IT123"}]},
+    )
+    entry.add_to_hass(hass)
+    coordinator = InPostTrackingCoordinator(hass, AsyncMock(), entry)
+    coordinator.update_interval = timedelta(hours=5, minutes=40)
+
+    noon = datetime(2026, 1, 15, 12, tzinfo=UTC)
+    with (
+        patch.object(coordinator, "_async_poll", side_effect=TimeoutError),
+        patch(
+            "custom_components.inpost.account.coordinator.dt_util.now",
+            return_value=noon,
+        ),
+        pytest.raises(TimeoutError),
+    ):
+        await coordinator._async_update_data()
+
+    assert coordinator.update_interval is not None
+    assert coordinator.update_interval <= timedelta(
+        minutes=MID_INTERVAL_MINUTES + STAGGER_MINUTES
+    )

@@ -1,6 +1,7 @@
 """Tests for the account coordinator: fetching, splitting and events."""
 
-from unittest.mock import AsyncMock
+from datetime import UTC, datetime, timedelta
+from unittest.mock import AsyncMock, patch
 
 from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.update_coordinator import UpdateFailed
@@ -16,6 +17,8 @@ from custom_components.inpost.const import (
     CONF_DELIVERED_FILTER_AMOUNT,
     CONF_DELIVERED_FILTER_TYPE,
     DOMAIN,
+    MID_INTERVAL_MINUTES,
+    STAGGER_MINUTES,
     ParcelStatus,
 )
 from tests.payloads import (
@@ -238,3 +241,24 @@ async def test_italian_account_uses_the_italian_normaliser(hass):
     data = await InPostCoordinator(hass, client, entry)._async_update_data()
     assert data[0]["barcode"] == "IT1"
     assert data[0]["status"] == ParcelStatus.AT_PICKUP_POINT
+
+
+async def test_failed_poll_drops_the_overnight_interval(hass):
+    coordinator = _coordinator(hass, AsyncMock())
+    coordinator.update_interval = timedelta(hours=5, minutes=40)
+
+    noon = datetime(2026, 1, 15, 12, tzinfo=UTC)
+    with (
+        patch.object(coordinator, "_async_poll", side_effect=TimeoutError),
+        patch(
+            "custom_components.inpost.account.coordinator.dt_util.now",
+            return_value=noon,
+        ),
+        pytest.raises(TimeoutError),
+    ):
+        await coordinator._async_update_data()
+
+    assert coordinator.update_interval is not None
+    assert coordinator.update_interval <= timedelta(
+        minutes=MID_INTERVAL_MINUTES + STAGGER_MINUTES
+    )

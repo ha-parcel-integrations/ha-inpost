@@ -214,11 +214,20 @@ class InPostCoordinator(DataUpdateCoordinator[list[dict]]):
         )
 
     async def _async_update_data(self) -> list[dict]:
+        try:
+            return await self._async_poll()
+        except Exception:
+            # The base class keeps the last interval after a failure, which
+            # after an overnight poll is the whole quiet window.
+            self._set_dynamic_interval(self.data or [], stop_when_empty=False)
+            raise
+
+    async def _async_poll(self) -> list[dict]:
         """Fetch the account's parcels and split into active vs delivered.
 
         ``aiohttp.ClientError`` and ``InPostApiError`` are deliberately not
-        caught — ``DataUpdateCoordinator`` turns them into ``UpdateFailed`` with
-        backoff. Only a dead session (the token refresh itself failed) needs
+        caught — ``DataUpdateCoordinator`` turns them into a failed update and
+        the wrapper above reschedules it. Only a dead session (the token refresh itself failed) needs
         special handling, because retrying it forever would never recover.
         """
         try:
