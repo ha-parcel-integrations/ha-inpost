@@ -134,6 +134,7 @@ Entity IDs include the account's phone number, so multiple accounts stay distinc
 | `sensor.inpost_<phone>_next_delivery` | Earliest expected delivery moment across all active parcels |
 | `sensor.inpost_<phone>_awaiting_pickup` | Number of parcels currently waiting to be collected (`at_pickup_point`), full list under the `parcels` attribute — on a tracking hub, the Paczkomat name is not part of that attribute, only the status |
 | `sensor.inpost_<phone>_delivered_parcels` | Recently collected parcels (see the retention option) |
+| `calendar.inpost_<phone>_deliveries` | Read-only calendar of expected deliveries, no extra API calls |
 | `sensor.inpost_<phone>_last_successful_update` | Diagnostic: when InPost was last polled successfully |
 
 A collected parcel moves from its per-parcel sensor to the delivered sensor automatically.
