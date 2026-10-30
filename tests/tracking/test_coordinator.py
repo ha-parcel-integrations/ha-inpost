@@ -8,6 +8,8 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.inpost.const import (
     CONF_COUNTRY,
+    CONF_DELIVERED_FILTER_AMOUNT,
+    CONF_DELIVERED_FILTER_TYPE,
     CONF_PARCELS,
     CONF_TRACKING_CODE,
     DOMAIN,
@@ -122,3 +124,36 @@ async def test_failed_poll_drops_the_overnight_interval(hass):
     assert coordinator.update_interval <= timedelta(
         minutes=MID_INTERVAL_MINUTES + STAGGER_MINUTES
     )
+
+
+async def test_a_parcel_the_delivered_list_leaves_out_still_fires_delivered(hass):
+    """The retention option limits the delivered sensor, never the events."""
+    entry = _tracking_entry(["IT-ONE", "IT-TWO"])
+    entry.add_to_hass(hass)
+    hass.config_entries.async_update_entry(
+        entry,
+        options={
+            **entry.options,
+            CONF_DELIVERED_FILTER_TYPE: "parcels",
+            CONF_DELIVERED_FILTER_AMOUNT: 1,
+        },
+    )
+    client = AsyncMock()
+    coordinator = InPostTrackingCoordinator(hass, client, entry)
+    delivered = []
+    hass.bus.async_listen(f"{DOMAIN}_parcel_delivered", lambda e: delivered.append(e))
+
+    client.async_get_parcel.side_effect = lambda code: {
+        "trackingNumber": code,
+        "status": "MMD.1001",
+    }
+    await coordinator._async_update_data()
+    client.async_get_parcel.side_effect = lambda code: {
+        "trackingNumber": code,
+        "status": "EOL.1001",
+    }
+    await coordinator._async_update_data()
+    await hass.async_block_till_done()
+
+    assert sorted(e.data["barcode"] for e in delivered) == ["IT-ONE", "IT-TWO"]
+    assert len(coordinator.delivered) == 1
