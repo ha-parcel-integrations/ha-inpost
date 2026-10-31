@@ -148,7 +148,6 @@ STATUS_MAP: dict[str, ParcelStatus] = {
     "stack_in_box_machine": ParcelStatus.AT_PICKUP_POINT,
     "stack_in_customer_service_point": ParcelStatus.AT_PICKUP_POINT,
     "pickup_reminder_sent": ParcelStatus.AT_PICKUP_POINT,
-    "pickup_reminder_sent_address": ParcelStatus.AT_PICKUP_POINT,
     # Despite the name, still collectible: a parcel left in a temporary locker
     # after its storage window keeps statusGroup TO_PICKUP, a valid openCode
     # and operations.collect, and the app offers it for pickup (seen live).
@@ -161,10 +160,15 @@ STATUS_MAP: dict[str, ParcelStatus] = {
     "claimed": ParcelStatus.DELIVERED,
     # Going back to the sender.
     "returned_to_sender": ParcelStatus.RETURNING,
+    "returned_to_source_branch": ParcelStatus.RETURNING,
     "return_pickup_confirmation_to_sender": ParcelStatus.RETURNING,
     # Something went wrong.
     "delay_in_delivery": ParcelStatus.PROBLEM,
     "delivery_attempt_failed": ParcelStatus.PROBLEM,
+    # Not a locker reminder: the courier found nobody at the address (event
+    # LMD.9004, group IN_DELIVERY) and the parcel is not in a locker. Read
+    # from a third-party integration's regression fix.
+    "pickup_reminder_sent_address": ParcelStatus.PROBLEM,
     "rejected_by_receiver": ParcelStatus.PROBLEM,
     "not_collected": ParcelStatus.PROBLEM,
     "missing": ParcelStatus.PROBLEM,

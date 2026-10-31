@@ -53,7 +53,11 @@ from tests.payloads import (
         ("collected_by_customer", ParcelStatus.DELIVERED),
         ("claimed", ParcelStatus.DELIVERED),
         ("returned_to_sender", ParcelStatus.RETURNING),
+        ("returned_to_source_branch", ParcelStatus.RETURNING),
         ("delivery_attempt_failed", ParcelStatus.PROBLEM),
+        # A failed courier delivery, not a locker reminder.
+        ("pickup_reminder_sent_address", ParcelStatus.PROBLEM),
+        ("pickup_reminder_sent", ParcelStatus.AT_PICKUP_POINT),
         ("undelivered_wrong_address", ParcelStatus.PROBLEM),
         ("avizo", ParcelStatus.PROBLEM),
     ],
