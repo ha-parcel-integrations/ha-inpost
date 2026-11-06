@@ -5,6 +5,33 @@ labels: ["enhancement"]
 assignees:
   - peter-mdf
 body:
+  - type: dropdown
+    id: source
+    attributes:
+      label: Which InPost setup is this about?
+      description: The source you picked during setup, shown on the integration's entry under Settings → Devices & services → InPost.
+      options:
+        - Account (auto-import)
+        - Tracking codes
+        - All of them / not setup-specific
+    validations:
+      required: true
+
+  - type: dropdown
+    id: country
+    attributes:
+      label: Which country is this about?
+      description: The country you picked during setup, shown on the integration's entry under Settings → Devices & services → InPost.
+      options:
+        - Poland
+        - Italy
+        - Portugal
+        - United Kingdom
+        - Spain
+        - All of them / not country-specific
+    validations:
+      required: true
+
   - type: textarea
     id: feature
     attributes:

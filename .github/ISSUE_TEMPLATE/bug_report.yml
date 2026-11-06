@@ -28,6 +28,33 @@ body:
     validations:
       required: true
 
+  - type: dropdown
+    id: source
+    attributes:
+      label: Which InPost setup are you using?
+      description: The source you picked during setup, shown on the integration's entry under Settings → Devices & services → InPost.
+      options:
+        - Account (auto-import)
+        - Tracking codes
+        - Not sure
+    validations:
+      required: true
+
+  - type: dropdown
+    id: country
+    attributes:
+      label: Which country did you pick during setup?
+      description: The country you picked during setup, shown on the integration's entry under Settings → Devices & services → InPost.
+      options:
+        - Poland
+        - Italy
+        - Portugal
+        - United Kingdom
+        - Spain
+        - Not sure
+    validations:
+      required: true
+
   - type: textarea
     id: what-happened
     attributes:
