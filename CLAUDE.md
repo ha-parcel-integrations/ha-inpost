@@ -120,9 +120,15 @@ free text.
   refresh path runs on every poll cycle past that.
 - **Status strategy**: the detailed status maps first, then falls back to the
   coarse status group, so an unmapped detailed value still buckets sensibly (and
-  still warns). `operations.collect == true` forces `pickup: true` even for an
-  unbucketed status string. A locker "signing" is **not** a delivery
+  still warns). `pickup` is `operations.collect`, a `pickUpPoint` (IT: `pickUp`),
+  else a status or history event that reached `at_pickup_point`, so it stays true
+  once collected and `pickup_point` is only filled when it is true. A locker "signing" is **not** a delivery
   (`at_pickup_point`); `claimed` is terminal picked-up.
+- **Parcel contract helpers** (`planned_window`, `planned_for_status`,
+  `is_pickup`) live once in `account/parcels.py`; the other sources import
+  them. The public tracking hub derives `pickup` from its event codes (a guess
+  until a real home delivery is checked against the `LMD.*` codes), and a
+  returned parcel stays `delivered: false` (no confirmed back-at-sender signal).
 - **No ETA** — `planned_from`/`planned_to` always `None` (calendar and
   `next_delivery` inert). No weight/dimensions (only a size class, under `raw`).
 - **An unmapped history status stays `None`, never `ParcelStatus.UNKNOWN`** — in

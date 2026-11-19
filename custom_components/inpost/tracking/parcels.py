@@ -10,7 +10,7 @@ from __future__ import annotations
 from datetime import datetime
 import logging
 
-from ..account.parcels import NEW_ISSUE_URL, parse_iso, to_iso_timestamp
+from ..account.parcels import NEW_ISSUE_URL, is_pickup, parse_iso, to_iso_timestamp
 from ..const import HISTORY_MAX_EVENTS, TRACKING_URL_BY_COUNTRY, ParcelStatus
 
 _LOGGER = logging.getLogger(__name__)
@@ -127,6 +127,7 @@ def normalize_tracking_parcel(
     details = raw.get("trackingDetails")
     history: list[dict] | None = None
     delivered_at = None
+    event_statuses: list[ParcelStatus | None] = []
     if isinstance(details, list):
         ordered: list[tuple[datetime, dict]] = []
         unparseable: list[dict] = []
@@ -141,6 +142,7 @@ def normalize_tracking_parcel(
             )
             if event_code and event_status is None:
                 _warn_unmapped_tracking_status(str(event_code))
+            event_statuses.append(event_status)
             timestamp = to_iso_timestamp(detail.get("datetime"))
             event = {
                 "timestamp": timestamp,
@@ -174,7 +176,7 @@ def normalize_tracking_parcel(
         "delivered_at": delivered_at if delivered else None,
         "planned_from": None,
         "planned_to": None,
-        "pickup": False,
+        "pickup": is_pickup(None, canonical_status, event_statuses),
         "pickup_point": None,
         "url": tracking_hub_url(code, country),
         "weight": None,

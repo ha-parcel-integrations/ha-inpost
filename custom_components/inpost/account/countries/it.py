@@ -14,7 +14,7 @@ import logging
 from typing import Any
 
 from ...const import HISTORY_MAX_EVENTS, TRACKING_URL_BY_COUNTRY, ParcelStatus
-from ..parcels import NEW_ISSUE_URL, parse_iso, to_iso_timestamp
+from ..parcels import NEW_ISSUE_URL, is_pickup, parse_iso, to_iso_timestamp
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -142,6 +142,16 @@ def normalize_parcel(raw: dict, *, include_history: bool = False) -> dict:
     if delivered:
         delivered_at = to_iso_timestamp(latest.get("eventTime"))
 
+    point_name = _pickup_point_name(raw.get("pickUp"))
+    pickup = is_pickup(
+        bool(point_name),
+        status,
+        (
+            STATUS_MAP.get(str(event.get("status") or "").strip().lower())
+            for _, event in events
+        ),
+    )
+
     history = None
     if include_history:
         history = [
@@ -165,8 +175,8 @@ def normalize_parcel(raw: dict, *, include_history: bool = False) -> dict:
         "delivered_at": delivered_at,
         "planned_from": None,
         "planned_to": None,
-        "pickup": status is ParcelStatus.AT_PICKUP_POINT,
-        "pickup_point": _pickup_point_name(raw.get("pickUp")),
+        "pickup": pickup,
+        "pickup_point": point_name if pickup else None,
         "url": template.format(tracking_code=tracking_code) if tracking_code else None,
         "weight": None,
         "dimensions": None,

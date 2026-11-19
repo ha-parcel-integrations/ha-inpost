@@ -249,7 +249,7 @@ def test_normalize_delivered_parcel():
     assert parcel["status"] == ParcelStatus.DELIVERED
     assert parcel["delivered"] is True
     assert parcel["delivered_at"] == "2026-04-30T18:22:00+02:00"
-    assert parcel["pickup"] is False
+    assert parcel["pickup"] is True
 
 
 def test_normalize_leaves_unexposed_fields_none():
