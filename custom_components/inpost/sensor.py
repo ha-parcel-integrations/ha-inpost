@@ -57,6 +57,7 @@ async def async_setup_entry(
         f"{entry_id}_delivered_parcels",
         f"{entry_id}_last_update",
         f"{entry_id}_awaiting_pickup",
+        f"{entry_id}_en_route_to_pickup_point",
     }
     for entity_entry in er.async_entries_for_config_entry(registry, entry_id):
         if (
@@ -78,6 +79,7 @@ async def async_setup_entry(
         for parcel in coordinator.data or []
     )
     entities.append(InPostNextDeliverySensor(coordinator, entry))
+    entities.append(InPostEnRouteToPickupPointSensor(coordinator, entry))
     entities.append(InPostAwaitingPickupSensor(coordinator, entry))
     entities.append(InPostDeliveredParcelsSensor(coordinator, entry))
     entities.append(InPostLastUpdateSensor(coordinator, entry))
@@ -236,6 +238,43 @@ class InPostNextDeliverySensor(CoordinatorEntity[InPostCoordinator], SensorEntit
             "sender": earliest.get("sender"),
             "receiver": earliest.get("receiver"),
         }
+
+
+class InPostEnRouteToPickupPointSensor(
+    CoordinatorEntity[InPostCoordinator], SensorEntity
+):
+    """Active parcels destined for, but not yet at, a Paczkomat or pickup point."""
+
+    _attr_has_entity_name = True
+    _attr_translation_key = "en_route_to_pickup_point"
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_attribution = ATTRIBUTION
+    _unrecorded_attributes = frozenset({"parcels"})
+
+    def __init__(self, coordinator: InPostCoordinator, entry: ConfigEntry) -> None:
+        """Initialize the sensor."""
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{entry.entry_id}_en_route_to_pickup_point"
+        self._attr_device_info = build_device_info(entry)
+
+    def _parcels(self) -> list[dict]:
+        return [
+            parcel
+            for parcel in self.coordinator.data or []
+            if parcel.get("pickup")
+            and parcel.get("status")
+            not in (ParcelStatus.AT_PICKUP_POINT, ParcelStatus.RETURNING)
+        ]
+
+    @property
+    def native_value(self) -> int:
+        """Return the number of parcels on their way to a pickup point."""
+        return len(self._parcels())
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return the extra state attributes."""
+        return {"parcels": self._parcels()}
 
 
 class InPostAwaitingPickupSensor(CoordinatorEntity[InPostCoordinator], SensorEntity):

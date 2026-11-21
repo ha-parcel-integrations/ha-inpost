@@ -47,7 +47,7 @@ What makes InPost worth its own integration is the **locker**: a parcel waiting 
 - Signs in on InPost's own sign-in page — phone number plus an SMS code, just like the app — and then reads your whole parcel inbox automatically. Nothing to type per parcel.
 - Public tracking-number hubs for PL, IT, PT, GB and ES; add codes through **Configure** or `inpost.track_parcel`.
 - Per-parcel sensor with the canonical status (`in_transit` / `out_for_delivery` / `at_pickup_point` / `delivered` / …), InPost's own status text, and — for a parcel waiting in a locker — the Paczkomat name.
-- Summary sensors: incoming parcels, parcels awaiting pickup and recently delivered parcels.
+- Summary sensors: incoming parcels, parcels on their way to a pickup point, parcels awaiting pickup and recently delivered parcels.
 - Events + device triggers for no-code automations (parcel registered, status changed, delivered).
 - Opt-in per-parcel status history.
 - Manual refresh button and a diagnostic last-update sensor.
@@ -132,6 +132,7 @@ Entity IDs include the account's phone number, so multiple accounts stay distinc
 | `sensor.inpost_<phone>_incoming_parcels` | Number of active parcels, full list under the `parcels` attribute |
 | `sensor.inpost_<phone>_parcel_<number>` | One per parcel; state is the canonical status, attributes carry the full normalised parcel |
 | `sensor.inpost_<phone>_next_delivery` | Earliest expected delivery moment across all active parcels |
+| `sensor.inpost_<phone>_en_route_to_pickup_point` | Number of active parcels heading for a Paczkomat or pickup point that have not arrived yet, full list under the `parcels` attribute |
 | `sensor.inpost_<phone>_awaiting_pickup` | Number of parcels currently waiting to be collected (`at_pickup_point`), full list under the `parcels` attribute — on a tracking hub, the Paczkomat name is not part of that attribute, only the status |
 | `sensor.inpost_<phone>_delivered_parcels` | Recently collected parcels (see the retention option) |
 | `calendar.inpost_<phone>_deliveries` | Read-only calendar of expected deliveries, no extra API calls |

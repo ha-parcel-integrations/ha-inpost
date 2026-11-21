@@ -7,6 +7,7 @@ from custom_components.inpost.const import ParcelStatus
 from custom_components.inpost.sensor import (
     InPostAwaitingPickupSensor,
     InPostDeliveredParcelsSensor,
+    InPostEnRouteToPickupPointSensor,
     InPostIncomingParcelsSensor,
     InPostLastUpdateSensor,
     InPostNextDeliverySensor,
@@ -111,6 +112,28 @@ def test_awaiting_pickup_counts_by_status_only():
         "A",
         "B",
     }
+
+
+def test_en_route_and_awaiting_pickup_split():
+    parcels = [
+        _parcel("EN_ROUTE", pickup=True),
+        _parcel("READY", pickup=True, status=ParcelStatus.AT_PICKUP_POINT),
+        _parcel("BACK", pickup=True, status=ParcelStatus.RETURNING),
+        _parcel("HOME"),
+    ]
+    en_route = InPostEnRouteToPickupPointSensor(_coordinator(parcels), _entry())
+    awaiting = InPostAwaitingPickupSensor(_coordinator(parcels), _entry())
+    assert en_route.unique_id == "e1_en_route_to_pickup_point"
+    assert [p["barcode"] for p in en_route.extra_state_attributes["parcels"]] == [
+        "EN_ROUTE"
+    ]
+    assert en_route.native_value == 1
+    assert awaiting.native_value == 1
+
+
+def test_en_route_empty():
+    sensor = InPostEnRouteToPickupPointSensor(_coordinator([]), _entry())
+    assert sensor.native_value == 0
 
 
 def test_awaiting_pickup_empty():

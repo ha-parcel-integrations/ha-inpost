@@ -129,6 +129,7 @@ free text.
   them. The public tracking hub derives `pickup` from its event codes (a guess
   until a real home delivery is checked against the `LMD.*` codes), and a
   returned parcel stays `delivered: false` (no confirmed back-at-sender signal).
+- **Both pickup sensors** (`en_route_to_pickup_point`, `awaiting_pickup`) exist for every entry. The Italian `pickUp` shape and the tracking hub's `LMD.*` codes have not been seen on a real pickup parcel, so `pickup` and the en-route sensor may read 0 there until one shows up.
 - **No ETA** — `planned_from`/`planned_to` always `None` (calendar and
   `next_delivery` inert). No weight/dimensions (only a size class, under `raw`).
 - **An unmapped history status stays `None`, never `ParcelStatus.UNKNOWN`** — in

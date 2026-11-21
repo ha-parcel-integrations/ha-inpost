@@ -168,6 +168,10 @@
       "next_delivery": {
         "name": "Próxima entrega"
       },
+      "en_route_to_pickup_point": {
+        "name": "A caminho do ponto de recolha",
+        "unit_of_measurement": "encomendas"
+      },
       "awaiting_pickup": {
         "name": "Pronta para recolha",
         "unit_of_measurement": "encomendas"

@@ -168,6 +168,10 @@
       "next_delivery": {
         "name": "Następna dostawa"
       },
+      "en_route_to_pickup_point": {
+        "name": "W drodze do punktu odbioru",
+        "unit_of_measurement": "przesyłki"
+      },
       "awaiting_pickup": {
         "name": "Oczekuje na odbiór",
         "unit_of_measurement": "przesyłki"
