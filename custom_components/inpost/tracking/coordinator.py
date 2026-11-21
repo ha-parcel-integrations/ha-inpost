@@ -4,15 +4,20 @@ from __future__ import annotations
 
 import asyncio
 from datetime import UTC, datetime
+import logging
 
+import aiohttp
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.update_coordinator import UpdateFailed
 
 from ..account.coordinator import InPostCoordinator
 from ..account.parcels import apply_delivered_filter, sort_parcels_by_ts
 from ..const import CONF_COUNTRY, CONF_PARCELS, CONF_TRACKING_CODE
 from .client import InPostApiError, InPostTrackingApiClient
 from .parcels import normalize_tracking_parcel
+
+_LOGGER = logging.getLogger(__name__)
 
 
 class InPostTrackingCoordinator(InPostCoordinator):
@@ -53,19 +58,39 @@ class InPostTrackingCoordinator(InPostCoordinator):
         # stays untouched until the user removes it by hand.
         codes_to_fetch = [code for code in codes if code not in self._delivered_codes]
 
-        try:
-            fetched = await asyncio.gather(
-                *(
-                    self._tracking_client.async_get_parcel(code)
-                    for code in codes_to_fetch
-                )
-            )
-        except InPostApiError as err:
-            self._handle_api_error(err)
+        fetched = await asyncio.gather(
+            *(self._tracking_client.async_get_parcel(code) for code in codes_to_fetch),
+            return_exceptions=True,
+        )
 
-        raws_by_code: dict[str, dict] = dict(zip(codes_to_fetch, fetched, strict=True))
-        for code, raw in raws_by_code.items():
-            self._raw_cache[code] = raw
+        # One code failing must not take the whole hub down: it keeps its
+        # last good payload (or stays absent) and the others still update.
+        raws_by_code: dict[str, dict] = {}
+        failures: list[InPostApiError] = []
+        for code, result in zip(codes_to_fetch, fetched, strict=True):
+            if isinstance(result, BaseException):
+                if not isinstance(
+                    result, (InPostApiError, aiohttp.ClientError, TimeoutError)
+                ):
+                    raise result
+                _LOGGER.warning("InPost tracking failed for %s: %s", code, result)
+                err = (
+                    result
+                    if isinstance(result, InPostApiError)
+                    else InPostApiError(str(result))
+                )
+                failures.append(err)
+                cached = self._raw_cache.get(code)
+                if cached is not None:
+                    raws_by_code[code] = cached
+                continue
+            self._raw_cache[code] = result
+            raws_by_code[code] = result
+
+        # A 429 on any code backs the whole poll off: it is one shared host.
+        rate_limited = next((e for e in failures if e.status_code == 429), None)
+        if rate_limited is not None:
+            self._handle_api_error(rate_limited)
 
         # Codes skipped from the fetch above (already confirmed delivered) —
         # re-add their cached payload so the delivered sensor keeps its data
@@ -74,6 +99,11 @@ class InPostTrackingCoordinator(InPostCoordinator):
             cached = self._raw_cache.get(code)
             if cached is not None:
                 raws_by_code[code] = cached
+
+        if failures and len(failures) == len(codes_to_fetch) and not raws_by_code:
+            raise UpdateFailed(
+                f"InPost tracking failed for every parcel: {failures[0]}"
+            )
 
         entries = [
             (

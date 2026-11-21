@@ -3,6 +3,8 @@
 from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, patch
 
+import aiohttp
+from homeassistant.helpers.update_coordinator import UpdateFailed
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
@@ -16,6 +18,7 @@ from custom_components.inpost.const import (
     MID_INTERVAL_MINUTES,
     STAGGER_MINUTES,
 )
+from custom_components.inpost.tracking.client import InPostApiError
 from custom_components.inpost.tracking.coordinator import InPostTrackingCoordinator
 
 
@@ -157,3 +160,89 @@ async def test_a_parcel_the_delivered_list_leaves_out_still_fires_delivered(hass
 
     assert sorted(e.data["barcode"] for e in delivered) == ["IT-ONE", "IT-TWO"]
     assert len(coordinator.delivered) == 1
+
+
+async def test_one_failing_code_does_not_take_the_hub_down(hass, caplog):
+    """A code InPost answers with a 500 is skipped; the other parcels update."""
+    entry = _tracking_entry(["IT-OK", "IT-BROKEN"])
+    entry.add_to_hass(hass)
+    client = AsyncMock()
+
+    async def _get(code):
+        if code == "IT-BROKEN":
+            raise InPostApiError("HTTP 500", status_code=500)
+        return {"trackingNumber": code, "status": "MMD.1001"}
+
+    client.async_get_parcel.side_effect = _get
+    coordinator = InPostTrackingCoordinator(hass, client, entry)
+
+    data = await coordinator._async_update_data()
+
+    assert [p["barcode"] for p in data] == ["IT-OK"]
+    assert "InPost tracking failed for IT-BROKEN" in caplog.text
+
+
+async def test_a_failing_code_keeps_its_last_good_data(hass):
+    """A code that fetched before keeps its previous payload while it fails."""
+    entry = _tracking_entry(["IT-OK", "IT-FLAKY"])
+    entry.add_to_hass(hass)
+    client = AsyncMock()
+    client.async_get_parcel.side_effect = lambda code: {
+        "trackingNumber": code,
+        "status": "MMD.1001",
+    }
+    coordinator = InPostTrackingCoordinator(hass, client, entry)
+    await coordinator._async_update_data()
+
+    async def _get(code):
+        if code == "IT-FLAKY":
+            raise aiohttp.ClientError("reset")
+        return {"trackingNumber": code, "status": "MMD.1001"}
+
+    client.async_get_parcel.side_effect = _get
+    data = await coordinator._async_update_data()
+
+    assert {p["barcode"] for p in data} == {"IT-OK", "IT-FLAKY"}
+
+
+async def test_every_code_failing_fails_the_refresh(hass):
+    """With nothing to show, the refresh fails as before."""
+    entry = _tracking_entry(["IT-A", "IT-B"])
+    entry.add_to_hass(hass)
+    client = AsyncMock()
+    client.async_get_parcel.side_effect = InPostApiError("HTTP 500", status_code=500)
+    coordinator = InPostTrackingCoordinator(hass, client, entry)
+
+    with pytest.raises(UpdateFailed, match="every parcel"):
+        await coordinator._async_update_data()
+
+
+async def test_a_429_on_one_code_backs_off_the_whole_poll(hass):
+    """A rate limit on any code is a rate limit for the shared host."""
+    entry = _tracking_entry(["IT-OK", "IT-LIMITED"])
+    entry.add_to_hass(hass)
+    client = AsyncMock()
+
+    async def _get(code):
+        if code == "IT-LIMITED":
+            raise InPostApiError("HTTP 429", status_code=429, retry_after=120)
+        return {"trackingNumber": code, "status": "MMD.1001"}
+
+    client.async_get_parcel.side_effect = _get
+    coordinator = InPostTrackingCoordinator(hass, client, entry)
+
+    with pytest.raises(UpdateFailed, match="429") as err:
+        await coordinator._async_update_data()
+    assert err.value.retry_after == 120
+
+
+async def test_an_unexpected_error_still_propagates(hass):
+    """Only request failures are isolated; a bug is not swallowed."""
+    entry = _tracking_entry(["IT-A"])
+    entry.add_to_hass(hass)
+    client = AsyncMock()
+    client.async_get_parcel.side_effect = KeyError("boom")
+    coordinator = InPostTrackingCoordinator(hass, client, entry)
+
+    with pytest.raises(KeyError):
+        await coordinator._async_update_data()
