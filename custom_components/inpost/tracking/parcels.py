@@ -18,7 +18,7 @@ _LOGGER = logging.getLogger(__name__)
 # Public cross-border status vocabulary, live-confirmed on IT, PT and GB
 # consignments on 2026-08-31.  These codes are deliberately separate from the
 # authenticated Polish inbox vocabulary in ``account/parcels.py``: same carrier, different API.
-TRACKING_STATUS_MAP: dict[str, str] = {
+TRACKING_STATUS_MAP: dict[str, ParcelStatus] = {
     # Creation and handover.
     "CRE.1001": ParcelStatus.REGISTERED,
     "FMD.1001": ParcelStatus.REGISTERED,
