@@ -123,6 +123,10 @@
         "country": {
           "name": "País",
           "description": "O hub de país ao qual adicioná-la. Só é necessário quando há mais de um hub configurado."
+        },
+        "contents": {
+          "name": "Conteúdo",
+          "description": "O que está na encomenda, nas suas próprias palavras. Chamar novamente para uma encomenda acompanhada substitui o conteúdo; um texto vazio apaga-o."
         }
       }
     },
@@ -137,6 +141,24 @@
         "country": {
           "name": "País",
           "description": "O hub de país do qual removê-la. Só é necessário quando há mais de um hub configurado."
+        }
+      }
+    },
+    "update_contents": {
+      "name": "Atualizar o conteúdo da encomenda",
+      "description": "Defina o que está numa encomenda, nas suas próprias palavras, para um código de seguimento. Um texto vazio apaga o conteúdo.",
+      "fields": {
+        "tracking_code": {
+          "name": "Código de rastreio",
+          "description": "O código de rastreio InPost."
+        },
+        "contents": {
+          "name": "Conteúdo",
+          "description": "O que está na encomenda, nas suas próprias palavras. Um texto vazio apaga-o."
+        },
+        "config_entry_id": {
+          "name": "Conta",
+          "description": "A conta para a qual guardar isto. Necessária quando nenhuma conta conhece ainda o código."
         }
       }
     }
@@ -186,6 +208,11 @@
       "parcel": {
         "name": "Encomenda {barcode}"
       }
+    }
+  },
+  "exceptions": {
+    "update_contents_entry_required": {
+      "message": "Nenhuma conta conhece este código. Escolha a conta para a qual o guardar."
     }
   }
 }

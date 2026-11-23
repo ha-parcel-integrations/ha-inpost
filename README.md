@@ -102,8 +102,11 @@ The public tracking endpoint deliberately does not expose sender/receiver detail
 
 | Service | Fields | Description |
 |---|---|---|
-| `inpost.track_parcel` | `tracking_code`, `country` (default `PL`) | Add a code to that public-tracking hub. |
+| `inpost.track_parcel` | `tracking_code`, `country` (default `PL`), `contents` (optional) | Add a code to that public-tracking hub, optionally noting what is in the parcel. |
 | `inpost.untrack_parcel` | `tracking_code`, `country` (default `PL`) | Remove a code from that public-tracking hub. |
+| `inpost.update_contents` | `tracking_code`, `contents`, `config_entry_id` (optional) | Set what is in a parcel, tracked or not; an empty `contents` clears it. It goes to every account or hub that lists the code; name one with `config_entry_id` (needed for a code none lists yet). |
+
+The `contents` text you set titles the parcel's calendar event and shows on the next-delivery sensor.
 
 ## Options
 

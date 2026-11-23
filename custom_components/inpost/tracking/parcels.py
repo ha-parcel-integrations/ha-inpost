@@ -170,6 +170,7 @@ def normalize_tracking_parcel(
         "barcode": code,
         "sender": None,
         "receiver": None,
+        "contents": None,
         "status": canonical_status,
         "raw_status": raw.get("statusTitle") or status_code,
         "delivered": delivered,

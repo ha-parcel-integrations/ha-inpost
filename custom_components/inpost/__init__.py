@@ -21,6 +21,7 @@ from .const import (
     DEFAULT_ACCOUNT_MARKET,
     PLATFORMS,
 )
+from .contents import ContentsStore
 from .services import async_setup_services, async_unload_services
 from .tracking.client import InPostTrackingApiClient
 from .tracking.coordinator import InPostTrackingCoordinator
@@ -92,6 +93,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: InPostConfigEntry) -> bo
     # cleanly; doing the first refresh here lets a transient failure fail the
     # whole entry so HA retries with backoff, and a dead session raise
     # ConfigEntryAuthFailed so HA starts the reauth flow.
+    await coordinator.contents_store.async_load()
     await coordinator.async_config_entry_first_refresh()
 
     entry.runtime_data = InPostData(client=client, coordinator=coordinator)
@@ -102,7 +104,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: InPostConfigEntry) -> bo
         entry.async_on_unload(
             entry.add_update_listener(_async_tracking_options_updated)
         )
-        async_setup_services(hass)
+    async_setup_services(hass, hub=CONF_COUNTRY in entry.data)
 
     # No entry.add_update_listener: the options flow calls async_schedule_reload
     # itself. Combining an update listener with a reload-on-update flow is
@@ -121,6 +123,10 @@ async def async_unload_entry(hass: HomeAssistant, entry: InPostConfigEntry) -> b
     """Unload an InPost config entry."""
     if not await hass.config_entries.async_unload_platforms(entry, PLATFORMS):
         return False
-    if CONF_COUNTRY in entry.data:
-        async_unload_services(hass, entry)
+    async_unload_services(hass, entry)
     return True
+
+
+async def async_remove_entry(hass: HomeAssistant, entry: InPostConfigEntry) -> None:
+    """Delete the contents the user set for the removed entry."""
+    await ContentsStore(hass, entry.entry_id).async_remove()

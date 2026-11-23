@@ -123,6 +123,10 @@
         "country": {
           "name": "Paese",
           "description": "L'hub nazionale a cui aggiungerlo. Necessario solo se è configurato più di un hub."
+        },
+        "contents": {
+          "name": "Contenuto",
+          "description": "Che cosa c'è nel pacco, con parole tue. Richiamando di nuovo l'azione per un pacco monitorato, il contenuto viene sostituito; un testo vuoto lo cancella."
         }
       }
     },
@@ -137,6 +141,24 @@
         "country": {
           "name": "Paese",
           "description": "L'hub nazionale da cui rimuoverlo. Necessario solo se è configurato più di un hub."
+        }
+      }
+    },
+    "update_contents": {
+      "name": "Aggiorna il contenuto del pacco",
+      "description": "Imposta che cosa c'è in un pacco, con parole tue, per un codice di tracciamento. Un testo vuoto cancella il contenuto.",
+      "fields": {
+        "tracking_code": {
+          "name": "Codice di tracciamento",
+          "description": "Il codice di tracciamento InPost."
+        },
+        "contents": {
+          "name": "Contenuto",
+          "description": "Che cosa c'è nel pacco, con parole tue. Un testo vuoto lo cancella."
+        },
+        "config_entry_id": {
+          "name": "Account",
+          "description": "L'account per cui salvare il valore. Necessario quando nessun account conosce ancora il codice."
         }
       }
     }
@@ -186,6 +208,11 @@
       "parcel": {
         "name": "Pacco {barcode}"
       }
+    }
+  },
+  "exceptions": {
+    "update_contents_entry_required": {
+      "message": "Nessun account conosce questo codice. Scegli l'account per cui salvarlo."
     }
   }
 }

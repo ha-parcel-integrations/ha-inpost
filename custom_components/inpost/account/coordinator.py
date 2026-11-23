@@ -33,6 +33,7 @@ from ..const import (
     STAGGER_MINUTES,
     ParcelStatus,
 )
+from ..contents import ContentsStore, normalize_code
 from .client import InPostApiClient, InPostApiError, InPostAuthReauthRequired
 from .countries import it
 from .parcels import apply_delivered_filter, normalize_parcel, sort_parcels_by_ts
@@ -128,6 +129,10 @@ class InPostCoordinator(DataUpdateCoordinator[list[dict]]):
             update_interval=timedelta(minutes=HOT_INTERVAL_MINUTES),
         )
         self._client = client
+        self.contents_store = ContentsStore(hass, entry.entry_id)
+        # Every code this entry lists, delivered ones past the retention filter
+        # included: update_contents asks which entry a code belongs to.
+        self.known_codes: frozenset[str] = frozenset()
         # An Italian account's parcels come from a backend with its own shape.
         self._normalize = (
             it.normalize_parcel
@@ -155,6 +160,13 @@ class InPostCoordinator(DataUpdateCoordinator[list[dict]]):
         # (see §5.5): the account backend fetches its whole inbox in one call
         # every cycle, so nothing is ever skipped there and this stays empty.
         self._delivered_codes: set[str] = set()
+
+    def _apply_contents(self, parcel: dict, code: object) -> dict:
+        """Put the user's own contents text over the carrier's, when there is one."""
+        user_value = self.contents_store.get(code)
+        if user_value is not None:
+            parcel["contents"] = user_value
+        return parcel
 
     @property
     def current_tier_minutes(self) -> int | None:
@@ -247,6 +259,13 @@ class InPostCoordinator(DataUpdateCoordinator[list[dict]]):
         normalized = [
             self._normalize(raw, include_history=include_history) for raw in raws
         ]
+        for parcel in normalized:
+            self._apply_contents(parcel, parcel["barcode"] or "")
+        self.known_codes = frozenset(
+            normalize_code(parcel["barcode"])
+            for parcel in normalized
+            if parcel["barcode"]
+        )
         active = [parcel for parcel in normalized if not parcel["delivered"]]
         delivered = [parcel for parcel in normalized if parcel["delivered"]]
 

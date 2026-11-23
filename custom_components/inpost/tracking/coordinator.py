@@ -14,6 +14,7 @@ from homeassistant.helpers.update_coordinator import UpdateFailed
 from ..account.coordinator import InPostCoordinator
 from ..account.parcels import apply_delivered_filter, sort_parcels_by_ts
 from ..const import CONF_COUNTRY, CONF_PARCELS, CONF_TRACKING_CODE
+from ..contents import normalize_code
 from .client import InPostApiError, InPostTrackingApiClient
 from .parcels import normalize_tracking_parcel
 
@@ -108,12 +109,23 @@ class InPostTrackingCoordinator(InPostCoordinator):
         entries = [
             (
                 code,
-                normalize_tracking_parcel(
-                    raw, country=self._country, include_history=self._include_history
+                self._apply_contents(
+                    normalize_tracking_parcel(
+                        raw,
+                        country=self._country,
+                        include_history=self._include_history,
+                    ),
+                    code,
                 ),
             )
             for code, raw in raws_by_code.items()
         ]
+        self.known_codes = frozenset(
+            normalize_code(value)
+            for code, parcel in entries
+            for value in (code, parcel.get("barcode"))
+            if value
+        )
         active = [parcel for _, parcel in entries if not parcel["delivered"]]
         delivered = [parcel for _, parcel in entries if parcel["delivered"]]
         # Rebuilt fresh from this cycle's data — a code whose payload just

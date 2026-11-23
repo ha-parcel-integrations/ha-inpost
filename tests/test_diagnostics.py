@@ -62,3 +62,22 @@ async def test_diagnostics_redacts_receiver_object_whole(hass):
     result = await async_get_config_entry_diagnostics(hass, entry)
 
     assert result["incoming"][0]["raw"]["receiver"] == "**REDACTED**"
+
+
+async def test_diagnostics_redacts_contents_in_both_builds(hass):
+    for data, parcel in (
+        ({}, normalize_parcel(ready_sample())),
+        ({"country": "IT"}, normalize_parcel(ready_sample())),
+    ):
+        entry = MagicMock()
+        entry.data = data
+        entry.options = {}
+        parcel = {**parcel, "contents": "Running shoes"}
+        entry.runtime_data.coordinator.data = [parcel]
+        entry.runtime_data.coordinator.delivered = [parcel]
+        entry.runtime_data.coordinator.delivered_codes = set()
+
+        result = await async_get_config_entry_diagnostics(hass, entry)
+
+        assert result["incoming"][0]["contents"] == "**REDACTED**"
+        assert result["delivered"][0]["contents"] == "**REDACTED**"

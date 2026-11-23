@@ -18,6 +18,7 @@ TO_REDACT = {
     "barcode",
     "sender",
     "receiver",
+    "contents",
     "url",
     "pickup_point",
     # InPost payload fields
@@ -43,6 +44,7 @@ TO_REDACT = {
 
 TRACKING_TO_REDACT = {
     "barcode",
+    "contents",
     "trackingNumber",
     "url",
     "tracking_code",
