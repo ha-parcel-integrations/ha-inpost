@@ -40,6 +40,7 @@ from .parcels import apply_delivered_filter, normalize_parcel, sort_parcels_by_t
 _LOGGER = logging.getLogger(__name__)
 _BACKOFF_BASE_SECONDS = 60
 _BACKOFF_CAP_SECONDS = 3600
+_ANCHOR_SNAP = timedelta(minutes=1)
 
 
 def _stagger_minutes(entry_id: str) -> int:
@@ -88,11 +89,16 @@ def _next_update_interval(
     """Convert a tier to a local-time-aware next coordinator interval."""
     if tier_minutes is None:
         return None
-    if _in_quiet_window(now):
-        return _next_anchor(now) - now
-    candidate = now + timedelta(minutes=tier_minutes + _stagger_minutes(entry_id))
+    # HA's timer can fire a fraction of a second before the booked anchor; a
+    # poll this close to an anchor is the anchor poll, not a reason to poll
+    # again straight after it.
+    anchor = _next_anchor(now)
+    effective = anchor if anchor - now < _ANCHOR_SNAP else now
+    if _in_quiet_window(effective):
+        return _next_anchor(effective) - now
+    candidate = effective + timedelta(minutes=tier_minutes + _stagger_minutes(entry_id))
     if _in_quiet_window(candidate):
-        return _next_anchor(now) - now
+        return _next_anchor(effective) - now
     return candidate - now
 
 

@@ -70,3 +70,15 @@ def test_schedule_uses_tier_stagger_and_clamps_to_anchor():
     assert late + _next_update_interval(
         late, MID_INTERVAL_MINUTES, "entry-1"
     ) == datetime(2026, 1, 2, tzinfo=UTC)
+
+
+def test_poll_just_before_an_anchor_counts_as_the_anchor_poll():
+    before_midnight = datetime(2026, 1, 1, 23, 59, 59, 800000, tzinfo=UTC)
+    interval = _next_update_interval(before_midnight, MID_INTERVAL_MINUTES, "entry-1")
+    assert before_midnight + interval == datetime(2026, 1, 2, 6, tzinfo=UTC)
+
+    before_six = datetime(2026, 1, 2, 5, 59, 59, 800000, tzinfo=UTC)
+    interval = _next_update_interval(before_six, MID_INTERVAL_MINUTES, "entry-1")
+    assert before_six + interval > datetime(2026, 1, 2, 6, tzinfo=UTC) + timedelta(
+        minutes=MID_INTERVAL_MINUTES
+    )
