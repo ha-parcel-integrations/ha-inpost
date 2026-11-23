@@ -163,7 +163,7 @@ async def test_a_parcel_the_delivered_list_leaves_out_still_fires_delivered(hass
 
 
 async def test_one_failing_code_does_not_take_the_hub_down(hass, caplog):
-    """A code InPost answers with a 500 is skipped; the other parcels update."""
+    """A code InPost answers with a 500 reads unknown; the others still update."""
     entry = _tracking_entry(["IT-OK", "IT-BROKEN"])
     entry.add_to_hass(hass)
     client = AsyncMock()
@@ -178,7 +178,10 @@ async def test_one_failing_code_does_not_take_the_hub_down(hass, caplog):
 
     data = await coordinator._async_update_data()
 
-    assert [p["barcode"] for p in data] == ["IT-OK"]
+    assert {p["barcode"]: p["status"] for p in data} == {
+        "IT-OK": "in_transit",
+        "IT-BROKEN": "unknown",
+    }
     assert "InPost tracking failed for IT-BROKEN" in caplog.text
 
 
@@ -205,16 +208,31 @@ async def test_a_failing_code_keeps_its_last_good_data(hass):
     assert {p["barcode"] for p in data} == {"IT-OK", "IT-FLAKY"}
 
 
-async def test_every_code_failing_fails_the_refresh(hass):
-    """With nothing to show, the refresh fails as before."""
+async def test_every_code_unreachable_fails_the_refresh(hass):
+    """With the host unreachable and nothing cached, the refresh fails."""
     entry = _tracking_entry(["IT-A", "IT-B"])
+    entry.add_to_hass(hass)
+    client = AsyncMock()
+    client.async_get_parcel.side_effect = aiohttp.ClientError("reset")
+    coordinator = InPostTrackingCoordinator(hass, client, entry)
+
+    with pytest.raises(UpdateFailed, match="every parcel"):
+        await coordinator._async_update_data()
+
+
+async def test_a_code_inpost_cannot_resolve_is_listed_as_unknown(hass):
+    """The only tracked code answering HTTP 500 keeps the hub available."""
+    entry = _tracking_entry(["IT-BROKEN"])
     entry.add_to_hass(hass)
     client = AsyncMock()
     client.async_get_parcel.side_effect = InPostApiError("HTTP 500", status_code=500)
     coordinator = InPostTrackingCoordinator(hass, client, entry)
 
-    with pytest.raises(UpdateFailed, match="every parcel"):
-        await coordinator._async_update_data()
+    data = await coordinator._async_update_data()
+
+    assert [(p["barcode"], p["status"]) for p in data] == [("IT-BROKEN", "unknown")]
+    assert coordinator.last_success_time is not None
+    assert "IT-BROKEN" not in coordinator._raw_cache
 
 
 async def test_a_429_on_one_code_backs_off_the_whole_poll(hass):

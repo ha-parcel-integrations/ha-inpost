@@ -138,9 +138,10 @@ free text.
   event" from a parcel whose *current* status is genuinely `unknown`. Matches
   `ha-dhl-nl`'s precedent; keep the two normalizers aligned on this.
 - **A tracking hub isolates per-code failures** (#20) — a code that errors
-  keeps its last good payload (or stays absent) and logs a WARNING; only a
-  429 on any code, or every code failing with nothing cached, fails the
-  refresh. Same shape as `ha-bpost`'s tracker.
+  keeps its last good payload and logs a WARNING; one InPost answers with an
+  HTTP error and never resolved is listed as `unknown` (a bare
+  `{trackingNumber}` raw, never cached). Only a 429 on any code, or every code
+  unreachable with nothing cached, fails the refresh.
 - **QR / openCode redaction (do not weaken)** — the locker-opening codes stay under
   `raw` and are **redacted in diagnostics**; a live `openCode` is a
   physical-security leak. A QR `image` entity is a possible fast-follow, out of

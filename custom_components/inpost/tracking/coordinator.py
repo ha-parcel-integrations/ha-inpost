@@ -65,9 +65,10 @@ class InPostTrackingCoordinator(InPostCoordinator):
         )
 
         # One code failing must not take the whole hub down: it keeps its
-        # last good payload (or stays absent) and the others still update.
+        # last good payload and the others still update.
         raws_by_code: dict[str, dict] = {}
         failures: list[InPostApiError] = []
+        unresolved: list[str] = []
         for code, result in zip(codes_to_fetch, fetched, strict=True):
             if isinstance(result, BaseException):
                 if not isinstance(
@@ -84,6 +85,10 @@ class InPostTrackingCoordinator(InPostCoordinator):
                 cached = self._raw_cache.get(code)
                 if cached is not None:
                     raws_by_code[code] = cached
+                elif err.status_code is not None:
+                    # InPost answered, so the host is up and only this code
+                    # has nothing to show: it still counts, as unknown.
+                    unresolved.append(code)
                 continue
             self._raw_cache[code] = result
             raws_by_code[code] = result
@@ -101,10 +106,17 @@ class InPostTrackingCoordinator(InPostCoordinator):
             if cached is not None:
                 raws_by_code[code] = cached
 
-        if failures and len(failures) == len(codes_to_fetch) and not raws_by_code:
+        if (
+            failures
+            and len(failures) == len(codes_to_fetch)
+            and not raws_by_code
+            and not unresolved
+        ):
             raise UpdateFailed(
                 f"InPost tracking failed for every parcel: {failures[0]}"
             )
+        for code in unresolved:
+            raws_by_code[code] = {"trackingNumber": code}
 
         entries = [
             (
