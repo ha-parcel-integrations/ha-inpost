@@ -132,6 +132,7 @@ class InPostTrackingCoordinator(InPostCoordinator):
             )
             for code, raw in raws_by_code.items()
         ]
+        self._parcel_codes = {id(parcel): code for code, parcel in entries}
         self.known_codes = frozenset(
             normalize_code(value)
             for code, parcel in entries

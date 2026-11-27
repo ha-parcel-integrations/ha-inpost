@@ -14,7 +14,7 @@ import hashlib
 import logging
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
@@ -140,6 +140,9 @@ class InPostCoordinator(DataUpdateCoordinator[list[dict]]):
             else normalize_parcel
         )
         self.delivered: list[dict] = []
+        # id(parcel) -> the code its contents are keyed by, rebuilt every poll,
+        # so a reapply finds the key even for a parcel without a barcode.
+        self._parcel_codes: dict[int, str] = {}
         # barcode -> last seen ParcelStatus / (planned_from, planned_to).
         # ``None`` on the first refresh so events are suppressed for parcels
         # that already existed when the integration started — otherwise every
@@ -167,6 +170,15 @@ class InPostCoordinator(DataUpdateCoordinator[list[dict]]):
         if user_value is not None:
             parcel["contents"] = user_value
         return parcel
+
+    @callback
+    def async_reapply_contents(self) -> None:
+        """Re-read the contents store into the published parcels, without a poll."""
+        for parcel in [*(self.data or []), *self.delivered]:
+            parcel["contents"] = None
+            code = self._parcel_codes.get(id(parcel), parcel.get("barcode") or "")
+            self._apply_contents(parcel, code)
+        self.async_update_listeners()
 
     @property
     def current_tier_minutes(self) -> int | None:
@@ -259,6 +271,9 @@ class InPostCoordinator(DataUpdateCoordinator[list[dict]]):
         normalized = [
             self._normalize(raw, include_history=include_history) for raw in raws
         ]
+        self._parcel_codes = {
+            id(parcel): parcel["barcode"] or "" for parcel in normalized
+        }
         for parcel in normalized:
             self._apply_contents(parcel, parcel["barcode"] or "")
         self.known_codes = frozenset(
