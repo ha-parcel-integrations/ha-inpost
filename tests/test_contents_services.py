@@ -347,7 +347,7 @@ async def test_untrack_parcel_drops_the_contents(hass):
     assert entry.options[CONF_PARCELS] == []
 
 
-async def test_untrack_parcel_skips_a_hub_that_is_not_loaded(hass):
+async def test_untrack_parcel_removes_the_code_of_an_unloaded_hub(hass):
     asleep = await _setup(hass, [HUB_CODE])
     other = await _setup(hass, [], country="PT")
     assert await hass.config_entries.async_unload(asleep.entry_id)
@@ -361,6 +361,39 @@ async def test_untrack_parcel_skips_a_hub_that_is_not_loaded(hass):
     )
 
     assert asleep.options[CONF_PARCELS] == []
+
+
+async def test_untrack_parcel_clears_the_contents_of_a_hub_that_is_not_loaded(
+    hass, hass_storage
+):
+    asleep = await _setup(hass, [HUB_CODE])
+    await _setup(hass, [], country="PT")
+    await _call(
+        hass,
+        "update_contents",
+        {CONF_TRACKING_CODE: HUB_CODE, "contents": "Running shoes"},
+    )
+    assert await hass.config_entries.async_unload(asleep.entry_id)
+    key = STORE_KEY % asleep.entry_id
+    assert hass_storage[key]["data"]["by_code"] == {HUB_CODE: "Running shoes"}
+    asleep.mock_state(hass, ConfigEntryState.SETUP_RETRY)
+
+    await _call(
+        hass, "untrack_parcel", {CONF_TRACKING_CODE: HUB_CODE, CONF_COUNTRY: "IT"}
+    )
+
+    assert asleep.options[CONF_PARCELS] == []
+    assert hass_storage[key]["data"]["by_code"] == {}
+
+    asleep.mock_state(hass, ConfigEntryState.NOT_LOADED)
+    with _polls():
+        assert await hass.config_entries.async_setup(asleep.entry_id)
+        await hass.async_block_till_done()
+    await _call(
+        hass, "track_parcel", {CONF_TRACKING_CODE: HUB_CODE, CONF_COUNTRY: "IT"}
+    )
+
+    assert _contents(asleep, HUB_CODE) is None
 
 
 async def test_a_stored_value_survives_a_restart_of_the_entry(hass, hass_storage):

@@ -101,8 +101,11 @@ def async_setup_services(hass: HomeAssistant, *, hub: bool = True) -> None:
     async def _untrack(call: ServiceCall) -> None:
         entry = _entry(hass, call.data[CONF_COUNTRY].upper())
         code = call.data[CONF_TRACKING_CODE].strip()
-        if (store := _contents_store(entry)) is not None:
-            store.async_set(code, None)
+        if (store := _contents_store(entry)) is None:
+            # The stored text outlives an unloaded entry and would resurface.
+            store = ContentsStore(hass, entry.entry_id)
+            await store.async_load()
+        store.async_set(code, None)
         parcels = entry.options.get(CONF_PARCELS, [])
         kept = [item for item in parcels if item.get(CONF_TRACKING_CODE) != code]
         if len(kept) != len(parcels):
